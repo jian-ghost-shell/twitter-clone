@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Models ====================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  tweets        Tweet[]
+  likes         Like[]
+  retweets      Retweet[]
+
+  // Follow system
+  followedBy    Follow[]  @relation("FollowedBy")
+  following     Follow[]  @relation("Following")
+}
+
+// NextAuth Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==================== Twitter Models ====================
+
+model Tweet {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Author
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Parent tweet (for replies)
+  parentId  String?
+  parent    Tweet?   @relation("ReplyTo", fields: [parentId], references: [id])
+
+  // Reverse relation for replies
+  replies   Tweet[]  @relation("ReplyTo")
+
+  // Interactions
+  likes     Like[]
+  retweets  Retweet[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  tweetId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tweet Tweet @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tweetId]) // One like per tweet per user
+}
+
+model Retweet {
+  id        String   @id @default(cuid())
+  userId    String
+  tweetId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tweet Tweet @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tweetId]) // One retweet per tweet per user
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId]) // Can't follow same user twice
+  @@index([followingId])
+}
