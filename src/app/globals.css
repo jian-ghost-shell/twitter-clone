@@ -530,6 +530,12 @@ body {
   border-radius: 24px;
   font-size: 16px;
   outline: none;
+  color: #0f1419;
+  background: #fff;
+}
+
+.search-input::placeholder {
+  color: #536471;
 }
 
 .search-input:focus {
