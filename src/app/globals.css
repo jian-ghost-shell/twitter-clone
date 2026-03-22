@@ -24,23 +24,17 @@
 }
 
 html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
-html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   overflow-x: hidden;
+  max-width: 100vw;
+  background: #fff;
+  color: #0f1419;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  width: 100%;
-  max-width: 100vw;
 }
 
 /* TweetForm Styles */
@@ -366,6 +360,7 @@ body {
 
 .stat-value {
   font-weight: bold;
+  color: #0f1419;
 }
 
 .stat-label {
