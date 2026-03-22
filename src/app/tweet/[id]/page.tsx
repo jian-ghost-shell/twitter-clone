@@ -257,7 +257,12 @@ export default function TweetPage() {
                 <div className="tweet-header">
                   <span className="tweet-name">{reply.user.name || 'Anonymous'}</span>
                   <span className="tweet-time">
-                    {new Date(reply.createdAt).toLocaleDateString()}
+                    {new Date(reply.createdAt).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}
                   </span>
                 </div>
                 <div className="tweet-text">{reply.content}</div>
