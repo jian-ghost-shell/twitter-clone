@@ -1,6 +1,7 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -27,8 +28,19 @@ export const authOptions: NextAuthOptions = {
           }
         })
 
-        // User exists - verify password (demo: accept any password)
+        // User exists - verify password
         if (user) {
+          if (user.password) {
+            // Password exists - verify
+            const isValid = await bcrypt.compare(credentials.password, user.password)
+            if (!isValid) {
+              return null // Wrong password
+            }
+          } else {
+            // No password stored (old account) - for demo, accept any password
+            // In production, you might want to require password reset
+          }
+          
           return {
             id: user.id,
             name: user.name || user.username,
@@ -37,11 +49,14 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
-        // User doesn't exist - create new account
+        // User doesn't exist - create new account with hashed password
+        const hashedPassword = await bcrypt.hash(credentials.password, 10)
+        
         const newUser = await prisma.user.create({
           data: {
             username: usernameLower,
             name: credentials.username, // Keep original casing for display name
+            password: hashedPassword,
           }
         })
 
