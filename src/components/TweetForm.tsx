@@ -40,10 +40,8 @@ export function TweetForm({ currentUser, onTweetCreated, replyToId }: TweetFormP
     } catch (error) {
       console.error('Upload failed:', error)
       alert('Failed to upload image. Please try again.')
-    } finally {
       setUploading(false)
     }
-    setUploading(false)
   }
 
   const handleRemoveImage = () => {
