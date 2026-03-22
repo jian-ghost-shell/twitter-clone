@@ -304,8 +304,8 @@ body {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  border-left: 1px solid #e1e8ed;
-  border-right: 1px solid #e1e8ed;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
 .profile-header {
@@ -536,8 +536,8 @@ body {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  border-left: 1px solid #e1e8ed;
-  border-right: 1px solid #e1e8ed;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
 .search-header {
@@ -643,8 +643,8 @@ body {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  border-left: 1px solid #e1e8ed;
-  border-right: 1px solid #e1e8ed;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
 .home-header {
@@ -707,8 +707,8 @@ body {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  border-left: 1px solid #e1e8ed;
-  border-right: 1px solid #e1e8ed;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
 .bookmarks-header {
@@ -738,8 +738,8 @@ body {
   margin: 0 auto;
   background: var(--card-bg);
   min-height: 100vh;
-  border-left: 1px solid #e1e8ed;
-  border-right: 1px solid #e1e8ed;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
 .tweet-detail-header {
