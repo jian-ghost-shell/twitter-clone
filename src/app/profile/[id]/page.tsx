@@ -180,6 +180,11 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <div className="tweet-text">{tweet.content}</div>
+                {tweet.image && (
+                  <div className="tweet-image">
+                    <img src={tweet.image} alt="Tweet image" />
+                  </div>
+                )}
               </div>
             </div>
           ))
