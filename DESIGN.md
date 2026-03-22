@@ -52,7 +52,7 @@
 |-------|------------|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript |
 | Backend | Next.js API Routes |
-| Auth | NextAuth.js v4 |
+| Auth | NextAuth.js v4 + bcryptjs |
 | Database | PostgreSQL (Neon) + Prisma ORM |
 | Styling | CSS Variables (Light/Dark mode) |
 | Deployment | Vercel |
@@ -115,8 +115,10 @@ twitter-clone/
 |-------|------|-------------|
 | id | String (cuid) | Primary key |
 | name | String? | Display name |
+| username | String | Unique username (lowercase, case-insensitive login) |
 | email | String? | Unique email |
 | image | String? | Avatar URL |
+| password | String? | Bcrypt hashed password |
 | createdAt | DateTime | Creation timestamp |
 
 ### Tweet
@@ -221,6 +223,10 @@ twitter-clone/
 - [x] Search (tweets and users)
 - [x] Dark mode (system preference)
 - [x] Image upload (base64)
+- [x] Image click-to-expand in feed
+- [x] Username-based login (case-insensitive)
+- [x] Bcrypt password hashing
+- [x] Responsive desktop width (max 800px)
 
 ---
 

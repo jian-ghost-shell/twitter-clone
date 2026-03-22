@@ -78,8 +78,10 @@ DATABASE_URL="postgresql://..." npx prisma db push
 - Uses CSS variables with `@media (prefers-color-scheme: dark)`
 
 ### Authentication
-- Credentials provider (email + any password)
-- User auto-created on first login
+- Credentials provider (username + password)
+- Passwords hashed with bcrypt
+- New username auto-creates account
+- Case-insensitive username login
 
 ---
 
