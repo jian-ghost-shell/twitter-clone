@@ -637,7 +637,7 @@ body {
 
 /* Home Page */
 .home-container {
-  max-width: 100% !important;
+  max-width: 100%;
   margin: 0 auto;
   background: var(--card-bg);
   min-height: 100vh;
@@ -645,6 +645,16 @@ body {
   overflow-x: hidden;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
+}
+
+@media (min-width: 601px) {
+  .home-container,
+  .search-container,
+  .profile-container,
+  .bookmarks-container,
+  .tweet-detail-container {
+    max-width: 600px;
+  }
 }
 
 .home-header {
