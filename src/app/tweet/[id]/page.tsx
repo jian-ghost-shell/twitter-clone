@@ -195,7 +195,12 @@ export default function TweetPage() {
               {tweet.user.name || 'Anonymous'}
             </Link>
             <span className="tweet-time">
-              {new Date(tweet.createdAt).toLocaleString()}
+              {new Date(tweet.createdAt).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              })}
             </span>
           </div>
           <div className="tweet-text">{tweet.content}</div>
