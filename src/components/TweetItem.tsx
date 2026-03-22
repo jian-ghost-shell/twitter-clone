@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { TweetActions } from './TweetActions'
 
@@ -39,6 +40,8 @@ interface TweetItemProps {
 }
 
 export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark }: TweetItemProps) {
+  const [imageExpanded, setImageExpanded] = useState(false)
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString('en-US', {
@@ -78,8 +81,13 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark }: Twe
         </div>
         <div className="tweet-text">{tweet.content}</div>
         {tweet.image && (
-          <div className="tweet-image">
-            <img src={tweet.image} alt="Tweet image" />
+          <div className={`tweet-image ${imageExpanded ? 'expanded' : ''}`}>
+            <img 
+              src={tweet.image} 
+              alt="Tweet image" 
+              onClick={() => setImageExpanded(!imageExpanded)}
+              style={{ cursor: 'pointer' }}
+            />
           </div>
         )}
         <TweetActions 

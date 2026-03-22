@@ -520,12 +520,23 @@ body {
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--border);
+  max-height: 250px;
+  transition: max-height 0.2s ease;
 }
 
 .tweet-image img {
   width: 100%;
   height: auto;
   display: block;
+  object-fit: cover;
+}
+
+.tweet-image.expanded {
+  max-height: none;
+}
+
+.tweet-image.expanded img {
+  cursor: pointer;
 }
 
 /* Search Page */
