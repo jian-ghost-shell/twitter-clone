@@ -20,6 +20,7 @@ interface User {
 interface Tweet {
   id: string
   content: string
+  image: string | null
   createdAt: string
   user: {
     id: string
