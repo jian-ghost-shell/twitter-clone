@@ -77,7 +77,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { content, image, userId } = body
+    const { content, image, userId, parentId } = body
 
     if (!content && !image) {
       return NextResponse.json({ error: 'Missing content or image' }, { status: 400 })
@@ -92,6 +92,7 @@ export async function POST(request: Request) {
         content: content || '',
         image: image || null,
         userId,
+        parentId: parentId || null,
       },
       include: {
         user: {
