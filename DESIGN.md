@@ -13,10 +13,10 @@
 ┌─────────────────────────────────────────────────────────┐
 │                      Frontend                           │
 │                    (Next.js App)                        │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐  │
-│  │   Home   │  │  Profile │  │       Auth           │  │
-│  │  (Feed)  │  │   Page   │  │  (NextAuth.js)       │  │
-│  └────┬─────┘  └────┬─────┘  └──────────┬───────────┘  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
+│  │   Home   │  │  Profile │  │       Auth         │  │
+│  │  (Feed) │  │   Page   │  │  (NextAuth.js)   │  │
+│  └────┬─────┘  └────┬─────┘  └────────┬───────────┘  │
 │       │            │                     │              │
 └───────┼────────────┼─────────────────────┼──────────────┘
         │            │                     │
@@ -28,14 +28,18 @@
 │  │ /api/    │  │ /api/    │  │    /api/auth/        │  │
 │  │  tweets  │  │  users   │  │   (NextAuth)         │  │
 │  └──────────┘  └──────────┘  └──────────────────────┘  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐  │
+│  │ /api/    │  │ /api/    │  │    /api/upload/      │  │
+│  │ bookmarks│  │  search  │  │   (base64 images)   │  │
+│  └──────────┘  └──────────┘  └──────────────────────┘  │
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │                    Data Layer                           │
 │  ┌─────────────────────┐  ┌─────────────────────────┐ │
-│  │    Prisma ORM        │  │    SQLite (dev.db)       │ │
-│  │  (Type-safe queries) │  │                         │ │
+│  │    Prisma ORM      │  │   PostgreSQL (Neon)   │ │
+│  │  (Type-safe)      │  │                       │ │
 │  └─────────────────────┘  └─────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -46,11 +50,12 @@
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Next.js 15 (App Router), React, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), React 19, TypeScript |
 | Backend | Next.js API Routes |
-| Auth | NextAuth.js |
-| Database | SQLite + Prisma ORM |
-| Language | TypeScript |
+| Auth | NextAuth.js v4 |
+| Database | PostgreSQL (Neon) + Prisma ORM |
+| Styling | CSS Variables (Light/Dark mode) |
+| Deployment | Vercel |
 
 ---
 
@@ -60,38 +65,45 @@
 twitter-clone/
 ├── prisma/
 │   ├── schema.prisma        # Database models
-│   ├── dev.db              # SQLite database
-│   └── migrations/         # Migration files
+│   └── migrations/          # Migration files
 │
 ├── src/
 │   ├── app/                # Next.js App Router
-│   │   ├── page.tsx        # Home page (Feed)
-│   │   ├── layout.tsx     # Root layout
-│   │   ├── globals.css    # Global styles
+│   │   ├── page.tsx        # Home page
+│   │   ├── layout.tsx      # Root layout
+│   │   ├── globals.css     # Global styles
 │   │   │
 │   │   ├── api/           # API Routes
 │   │   │   ├── auth/      # NextAuth endpoints
-│   │   │   ├── tweets/    # Tweet CRUD
-│   │   │   └── users/     # User profiles
+│   │   │   ├── tweets/    # Tweet CRUD + interactions
+│   │   │   ├── users/     # User profiles + follow
+│   │   │   ├── bookmarks/  # User bookmarks
+│   │   │   ├── search/    # Search API
+│   │   │   └── upload/    # Image upload (base64)
 │   │   │
-│   │   └── profile/       # Profile page
-│   │       └── [id]/
+│   │   ├── profile/[id]/  # Profile page
+│   │   ├── search/         # Search page
+│   │   ├── bookmarks/      # Bookmarks page
+│   │   └── tweet/[id]/    # Tweet detail page
 │   │
 │   ├── components/        # React components
-│   │   ├── Tweet.tsx
 │   │   ├── Feed.tsx
 │   │   ├── TweetForm.tsx
-│   │   └── Navbar.tsx
+│   │   ├── TweetItem.tsx
+│   │   ├── TweetActions.tsx
+│   │   ├── TweetList.tsx
+│   │   └── AuthButton.tsx
 │   │
-│   ├── lib/               # Utilities
-│   │   ├── prisma.ts      # Prisma client
-│   │   └── auth.ts        # NextAuth config
-│   │
-│   └── types/             # TypeScript types
+│   └── lib/               # Utilities
+│       ├── prisma.ts       # Prisma client
+│       └── auth.ts         # NextAuth config
 │
-├── public/                # Static assets
-├── package.json
-└── DESIGN.md             # This file
+├── public/                 # Static assets
+├── README.md
+├── DESIGN.md
+├── TASKS.md
+├── P1.md
+└── DEPLOY.md
 ```
 
 ---
@@ -111,7 +123,8 @@ twitter-clone/
 | Field | Type | Description |
 |-------|------|-------------|
 | id | String (cuid) | Primary key |
-| content | String | Tweet text (max 280) |
+| content | String | Tweet text |
+| image | String? | Base64 image data |
 | createdAt | DateTime | Creation timestamp |
 | userId | String | Author's ID |
 | parentId | String? | Parent tweet (for replies) |
@@ -122,7 +135,6 @@ twitter-clone/
 | id | String (cuid) | Primary key |
 | userId | String | Who liked |
 | tweetId | String | Which tweet |
-| createdAt | DateTime | |
 
 ### Retweet
 | Field | Type | Description |
@@ -130,7 +142,6 @@ twitter-clone/
 | id | String (cuid) | Primary key |
 | userId | String | Who retweeted |
 | tweetId | String | Which tweet |
-| createdAt | DateTime | |
 
 ### Follow
 | Field | Type | Description |
@@ -139,6 +150,13 @@ twitter-clone/
 | followerId | String | Who follows |
 | followingId | String | Who is followed |
 
+### Bookmark
+| Field | Type | Description |
+|-------|------|-------------|
+| id | String (cuid) | Primary key |
+| userId | String | Who bookmarked |
+| tweetId | String | Which tweet |
+
 ---
 
 ## 🔌 API Endpoints
@@ -146,67 +164,70 @@ twitter-clone/
 ### Tweets
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/tweets | Get feed (all tweets) |
-| POST | /api/tweets | Create new tweet |
+| GET | /api/tweets | Get all tweets |
+| POST | /api/tweets | Create tweet |
 | DELETE | /api/tweets/[id] | Delete tweet |
-| POST | /api/tweets/[id]/like | Like a tweet |
-| POST | /api/tweets/[id]/retweet | Retweet |
+| GET | /api/tweets/following | Get timeline (followed users) |
+| GET | /api/tweets/[id] | Get single tweet with replies |
+| POST | /api/tweets/[id]/like | Like/unlike |
+| POST | /api/tweets/[id]/retweet | Retweet/unretweet |
 | POST | /api/tweets/[id]/reply | Reply to tweet |
+| POST | /api/tweets/[id]/bookmark | Bookmark/unbookmark |
 
 ### Users
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/users/[id] | Get user profile |
+| GET | /api/users/[id] | Get profile |
 | GET | /api/users/[id]/tweets | Get user's tweets |
 | POST | /api/users/[id]/follow | Follow user |
 | DELETE | /api/users/[id]/follow | Unfollow user |
 
-### Auth
+### Other
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | /api/search?q= | Search tweets & users |
+| GET | /api/bookmarks | Get user's bookmarks |
+| POST | /api/upload | Upload image (base64) |
 | GET/POST | /api/auth/[...nextauth] | NextAuth handlers |
 
 ---
 
-## 🎯 MVP Features
+## ✅ Completed Features
 
 ### Phase 1: Basic Tweet Functionality ✅
 - [x] User signup/login (NextAuth - Credentials)
-- [x] Post tweet (text only)
+- [x] Post tweet (text + images)
 - [x] View feed (all tweets)
 - [x] Delete own tweets
 
 ### Phase 2: User Authentication ✅
 - [x] NextAuth.js setup
-- [x] Sign in page
+- [x] Sign in/out pages
 - [x] Session management
 
 ### Phase 3: Interactions ✅
 - [x] Like/Unlike tweets
 - [x] Retweet
 - [x] Reply to tweets
+- [x] Bookmark tweets
 
-### Phase 4: Social Features (In Progress)
-- [ ] User profile page
-- [ ] Follow/Unfollow users
-- [ ] Timeline (only followed users)
+### Phase 4: Social Features ✅
+- [x] User profile pages
+- [x] Follow/Unfollow users
+- [x] Timeline (Home / Following tabs)
+- [x] Tweet detail page with replies
 
-### Phase 5: Nice to Have
-- [ ] Real-time updates (WebSocket)
-- [ ] Image upload
-- [ ] Direct messages
+### Additional ✅
+- [x] Search (tweets and users)
+- [x] Dark mode (system preference)
+- [x] Image upload (base64)
 
 ---
 
-## 🚀 Getting Started
+## 🌐 Deployment
 
-```bash
-# Install dependencies
-npm install
+- **Production:** https://twitter-clone-pearl-two.vercel.app
+- **Database:** Neon (PostgreSQL)
+- **Platform:** Vercel
 
-# Run development server
-npm run dev
-
-# Open browser
-http://localhost:3000
-```
+See [DEPLOY.md](./DEPLOY.md) for deployment instructions.
