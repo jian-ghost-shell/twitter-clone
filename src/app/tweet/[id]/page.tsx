@@ -26,6 +26,7 @@ interface Tweet {
     name: string | null
     image: string | null
   }
+  replies?: any[]
   _count: {
     likes: number
     retweets: number
