@@ -279,6 +279,8 @@ body {
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
   border-left: 1px solid #e1e8ed;
   border-right: 1px solid #e1e8ed;
 }
@@ -507,6 +509,8 @@ body {
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
   border-left: 1px solid #e1e8ed;
   border-right: 1px solid #e1e8ed;
 }
@@ -606,6 +610,8 @@ body {
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
   border-left: 1px solid #e1e8ed;
   border-right: 1px solid #e1e8ed;
 }
@@ -668,6 +674,8 @@ body {
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
   border-left: 1px solid #e1e8ed;
   border-right: 1px solid #e1e8ed;
 }
