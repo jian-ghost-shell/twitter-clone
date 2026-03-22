@@ -39,7 +39,9 @@ export function TweetForm({ currentUser, onTweetCreated, replyToId }: TweetFormP
       }
     } catch (error) {
       console.error('Upload failed:', error)
-      alert('Failed to upload image')
+      alert('Failed to upload image. Please try again.')
+    } finally {
+      setUploading(false)
     }
     setUploading(false)
   }
@@ -116,6 +118,7 @@ export function TweetForm({ currentUser, onTweetCreated, replyToId }: TweetFormP
             accept="image/jpeg,image/png,image/gif,image/webp"
             className="image-input"
             id="image-upload"
+            capture="environment"
           />
           <label htmlFor="image-upload" className="image-upload-btn">
             {uploading ? '⏳' : '🖼️'}
