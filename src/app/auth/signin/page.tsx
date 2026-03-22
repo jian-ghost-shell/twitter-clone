@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function SignIn() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -15,7 +15,7 @@ export default function SignIn() {
     setLoading(true)
 
     const result = await signIn('credentials', {
-      email,
+      username,
       password,
       redirect: false,
     })
@@ -24,7 +24,7 @@ export default function SignIn() {
       router.push('/')
       router.refresh()
     } else {
-      alert('Login failed')
+      alert('Login failed. Please try again.')
     }
     setLoading(false)
   }
@@ -33,16 +33,16 @@ export default function SignIn() {
     <div className="auth-container">
       <div className="auth-box">
         <h1>Sign In</h1>
-        <p>Enter your email to continue</p>
+        <p>Enter your username to continue</p>
         
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label>Email</label>
+            <label>Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Your username"
               required
             />
           </div>
@@ -52,13 +52,18 @@ export default function SignIn() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Any password works for demo"
+              placeholder="Any password for demo"
+              required
             />
           </div>
           <button type="submit" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+        
+        <p className="auth-hint">
+          New username? We&apos;ll create an account for you automatically.
+        </p>
       </div>
     </div>
   )

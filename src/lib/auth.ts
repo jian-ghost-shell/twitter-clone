@@ -7,41 +7,47 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null
         }
 
-        // Find user by email
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+        const usernameLower = credentials.username.toLowerCase()
+
+        // Find user by username (case-insensitive)
+        const user = await prisma.user.findFirst({
+          where: {
+            username: {
+              equals: usernameLower,
+              mode: 'insensitive'
+            }
+          }
         })
 
-        // For demo: accept any password for existing users
-        // In production: use bcrypt to compare hashed passwords
+        // User exists - verify password (demo: accept any password)
         if (user) {
           return {
             id: user.id,
-            name: user.name,
+            name: user.name || user.username,
             email: user.email,
             image: user.image,
           }
         }
 
-        // Auto-create user on first login (for demo purposes)
+        // User doesn't exist - create new account
         const newUser = await prisma.user.create({
           data: {
-            email: credentials.email,
-            name: credentials.email.split('@')[0],
+            username: usernameLower,
+            name: credentials.username, // Keep original casing for display name
           }
         })
 
         return {
           id: newUser.id,
-          name: newUser.name,
+          name: newUser.name || newUser.username,
           email: newUser.email,
         }
       }
