@@ -271,7 +271,7 @@ body {
 
 /* Profile Page */
 .profile-container {
-  max-width: 600px;
+  max-width: 100% !important;
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
@@ -499,7 +499,7 @@ body {
 
 /* Search Page */
 .search-container {
-  max-width: 600px;
+  max-width: 100% !important;
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
@@ -598,7 +598,7 @@ body {
 
 /* Home Page */
 .home-container {
-  max-width: 600px;
+  max-width: 100% !important;
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
@@ -660,7 +660,7 @@ body {
 
 /* Bookmarks Page */
 .bookmarks-container {
-  max-width: 600px;
+  max-width: 100% !important;
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
@@ -687,7 +687,7 @@ body {
 
 /* Tweet Detail Page */
 .tweet-detail-container {
-  max-width: 600px;
+  max-width: 100% !important;
   margin: 0 auto;
   background: #fff;
   min-height: 100vh;
