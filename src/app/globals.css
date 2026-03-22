@@ -522,13 +522,17 @@ body {
   border: 1px solid var(--border);
   max-height: 250px;
   transition: max-height 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tweet-image img {
   width: 100%;
   height: auto;
+  max-height: 250px;
+  object-fit: contain;
   display: block;
-  object-fit: cover;
 }
 
 .tweet-image.expanded {
@@ -537,6 +541,7 @@ body {
 
 .tweet-image.expanded img {
   cursor: pointer;
+  max-height: none;
 }
 
 /* Search Page */
