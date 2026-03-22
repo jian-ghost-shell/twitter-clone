@@ -68,7 +68,7 @@ body {
 
 /* TweetForm Styles */
 .tweet-form {
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   padding: 16px;
   background: var(--card-bg);
 }
@@ -144,7 +144,7 @@ body {
 .tweet {
   display: flex;
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -313,7 +313,8 @@ body {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
 }
 
 .back-btn {
@@ -379,7 +380,7 @@ body {
   display: flex;
   gap: 24px;
   padding: 0 16px 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
 }
 
 .stat {
@@ -421,7 +422,7 @@ body {
 /* Home Tabs */
 .home-tabs {
   display: flex;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
 }
 
 .home-tabs .tab {
@@ -541,7 +542,7 @@ body {
 
 .search-header {
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   background: var(--card-bg);
@@ -649,9 +650,9 @@ body {
 .home-header {
   position: sticky;
   top: 0;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--bg-primary);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   padding: 16px;
   z-index: 100;
 }
@@ -712,7 +713,8 @@ body {
 
 .bookmarks-header {
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
 }
 
 .bookmarks-header h1 {
@@ -745,7 +747,7 @@ body {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   background: var(--card-bg);
@@ -758,7 +760,7 @@ body {
 
 .parent-tweet {
   padding: 12px 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   background: var(--bg-secondary);
 }
 
@@ -793,11 +795,11 @@ body {
 
 .main-tweet {
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
 }
 
 .reply-form {
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
 }
 
 .replies-section {
@@ -872,7 +874,7 @@ body {
 /* Login Prompt */
 .login-prompt {
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--border);
   background: var(--bg-secondary);
   text-align: center;
 }
