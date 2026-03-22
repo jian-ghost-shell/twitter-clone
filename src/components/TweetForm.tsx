@@ -118,7 +118,6 @@ export function TweetForm({ currentUser, onTweetCreated, replyToId }: TweetFormP
             accept="image/jpeg,image/png,image/gif,image/webp"
             className="image-input"
             id="image-upload"
-            capture="environment"
           />
           <label htmlFor="image-upload" className="image-upload-btn">
             {uploading ? '⏳' : '🖼️'}
