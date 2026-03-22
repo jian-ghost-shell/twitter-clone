@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -30,7 +30,7 @@ interface User {
   followersCount: number
 }
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get('q') || ''
   
@@ -69,7 +69,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="search-container">
+    <>
       <header className="search-header">
         <form onSubmit={handleSubmit} className="search-form">
           <input
@@ -153,6 +153,16 @@ export default function SearchPage() {
           </>
         )}
       </div>
+    </>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <div className="search-container">
+      <Suspense fallback={<div className="search-loading">Loading...</div>}>
+        <SearchContent />
+      </Suspense>
     </div>
   )
 }
