@@ -84,6 +84,25 @@
 - [x] **4.2** Follow/Unfollow users ✅
   - API: POST/DELETE /api/users/[id]/follow
   - UI: Profile 页面 Follow 按钮
+
+- [x] **P1-1** Timeline (Following tab) ✅
+  - API: GET /api/tweets/following
+  - UI: Home / Following tabs
+
+- [x] **P1-2** Image Upload ✅
+  - API: POST /api/upload
+  - UI: Image upload button in TweetForm
+  - Display images in Feed
+
+- [x] **P1-3** Search ✅
+  - API: GET /api/search?q=keyword
+  - Page: /search
+  - Search tweets and users
+
+- [x] **P1-4** Bookmark ✅
+  - API: POST /api/tweets/[id]/bookmark
+  - API: GET /api/bookmarks
+  - UI: 🔖 button in Feed
 - [ ] **1.2** Create Tweet API routes
   - [ ] GET /api/tweets - Get all tweets
   - [ ] POST /api/tweets - Create tweet

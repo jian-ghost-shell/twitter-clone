@@ -18,6 +18,17 @@ export async function GET() {
             image: true,
           },
         },
+        parent: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            }
+          }
+        },
         _count: {
           select: {
             likes: true,
@@ -66,19 +77,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { content, userId } = body
+    const { content, image, userId } = body
 
-    if (!content || !userId) {
-      return NextResponse.json({ error: 'Missing content or userId' }, { status: 400 })
+    if (!content && !image) {
+      return NextResponse.json({ error: 'Missing content or image' }, { status: 400 })
     }
 
-    if (content.length > 280) {
+    if (content && content.length > 280) {
       return NextResponse.json({ error: 'Tweet too long (max 280 chars)' }, { status: 400 })
     }
 
     const tweet = await prisma.tweet.create({
       data: {
-        content,
+        content: content || '',
+        image: image || null,
         userId,
       },
       include: {
