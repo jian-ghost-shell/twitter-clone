@@ -10,6 +10,7 @@ async function main() {
     create: {
       id: 'demo-user-1',
       name: 'Demo User',
+      username: 'demo',
       email: 'demo@example.com',
     },
   })
