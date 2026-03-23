@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { TweetActions } from './TweetActions'
 
 interface TweetItemProps {
@@ -37,9 +38,11 @@ interface TweetItemProps {
   onRetweet: (id: string) => void
   onReply: (id: string) => void
   onBookmark: (id: string) => void
+  onDelete?: (id: string) => void
 }
 
-export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark }: TweetItemProps) {
+export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark, onDelete }: TweetItemProps) {
+  const { data: session } = useSession()
   const [imageExpanded, setImageExpanded] = useState(false)
 
   const formatDate = (dateString: string) => {
@@ -72,7 +75,7 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark }: Twe
             </span>
           </Link>
         )}
-        
+
         <div className="tweet-header">
           <Link href={`/profile/${tweet.user.id}`} className="tweet-name">
             {tweet.user.name || 'Anonymous'}
@@ -82,20 +85,22 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark }: Twe
         <div className="tweet-text">{tweet.content}</div>
         {tweet.image && (
           <div className={`tweet-image ${imageExpanded ? 'expanded' : ''}`}>
-            <img 
-              src={tweet.image} 
-              alt="Tweet image" 
+            <img
+              src={tweet.image}
+              alt="Tweet image"
               onClick={() => setImageExpanded(!imageExpanded)}
               style={{ cursor: 'pointer' }}
             />
           </div>
         )}
-        <TweetActions 
+        <TweetActions
           tweet={tweet}
+          currentUserId={session?.user?.id}
           onLike={onLike}
           onRetweet={onRetweet}
           onReply={onReply}
           onBookmark={onBookmark}
+          onDelete={onDelete}
         />
       </div>
     </div>

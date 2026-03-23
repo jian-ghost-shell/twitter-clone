@@ -292,6 +292,10 @@ body {
   background: rgba(29, 155, 240, 0.1);
 }
 
+.action-btn.delete-btn:hover {
+  background: rgba(244, 33, 46, 0.1);
+}
+
 /* Profile Page */
 .profile-container {
   max-width: 100%;

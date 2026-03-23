@@ -231,6 +231,17 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
     }
   }
 
+  const handleDelete = async (tweetId: string) => {
+    try {
+      const res = await fetch(`/api/tweets/${tweetId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setTweets(tweets.filter(t => t.id !== tweetId))
+      }
+    } catch (error) {
+      console.error('Error deleting tweet:', error)
+    }
+  }
+
   if (loading && tweets.length === 0) {
     return (
       <div className="feed-loading">
@@ -255,6 +266,7 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
         onRetweet={handleRetweet}
         onReply={handleReply}
         onBookmark={handleBookmark}
+        onDelete={handleDelete}
       />
       
       {/* Infinite scroll trigger */}

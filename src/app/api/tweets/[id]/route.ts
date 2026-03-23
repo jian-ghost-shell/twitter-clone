@@ -101,6 +101,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Check if tweet exists
     const tweet = await prisma.tweet.findUnique({
@@ -109,6 +114,11 @@ export async function DELETE(
 
     if (!tweet) {
       return NextResponse.json({ error: 'Tweet not found' }, { status: 404 })
+    }
+
+    // Only allow deletion by the tweet owner
+    if (tweet.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Delete the tweet (cascades to likes and retweets)
