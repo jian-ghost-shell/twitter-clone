@@ -51,6 +51,18 @@ export async function POST(
       }
     })
 
+    // Create notification (but not for self-retweets)
+    if (tweet.userId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          type: 'retweet',
+          userId: tweet.userId,
+          actorId: session.user.id,
+          tweetId,
+        },
+      })
+    }
+
     return NextResponse.json({ retweeted: true })
   } catch (error) {
     console.error('Error retweeting:', error)

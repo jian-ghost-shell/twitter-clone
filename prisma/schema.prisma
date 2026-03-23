@@ -33,6 +33,10 @@ model User {
 
   // Bookmarks
   bookmarks    Bookmark[]
+
+  // Notifications
+  notifications Notification[]
+  sentNotifications Notification[] @relation("NotificationsSent")
 }
 
 // NextAuth Models
@@ -98,6 +102,9 @@ model Tweet {
   // Interactions
   likes     Like[]
   retweets  Retweet[]
+
+  // Notifications
+  notifications Notification[]
 }
 
 model Like {
@@ -147,4 +154,21 @@ model Bookmark {
   tweet Tweet @relation(fields: [tweetId], references: [id], onDelete: Cascade)
 
   @@unique([userId, tweetId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // "like" | "retweet" | "reply" | "follow"
+  userId    String   // recipient
+  actorId   String   // who triggered it
+  tweetId   String?  // related tweet (for like/retweet/reply)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User  @relation("NotificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
+  tweet Tweet? @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

@@ -7,6 +7,7 @@ import { TweetForm } from '@/components/TweetForm'
 import { Feed } from '@/components/Feed'
 import { AuthButton } from '@/components/AuthButton'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { NotificationDropdown } from '@/components/NotificationDropdown'
 
 type TabType = 'home' | 'following'
 
@@ -28,6 +29,7 @@ export default function Home() {
         <div className="header-actions">
           <ThemeToggle />
           <Link href="/search" className="search-icon">🔍</Link>
+          <NotificationDropdown />
           <Link href="/bookmarks" className="bookmarks-icon">🔖</Link>
           <AuthButton />
         </div>

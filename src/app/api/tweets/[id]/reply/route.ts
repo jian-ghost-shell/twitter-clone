@@ -49,6 +49,18 @@ export async function POST(
       }
     })
 
+    // Create notification (but not for self-replies)
+    if (parentTweet.userId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          type: 'reply',
+          userId: parentTweet.userId,
+          actorId: session.user.id,
+          tweetId: reply.id,
+        },
+      })
+    }
+
     return NextResponse.json(reply)
   } catch (error) {
     console.error('Error creating reply:', error)

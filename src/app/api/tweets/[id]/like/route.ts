@@ -51,6 +51,18 @@ export async function POST(
       }
     })
 
+    // Create notification (but not for self-likes)
+    if (tweet.userId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          type: 'like',
+          userId: tweet.userId,
+          actorId: session.user.id,
+          tweetId,
+        },
+      })
+    }
+
     return NextResponse.json({ liked: true })
   } catch (error) {
     console.error('Error liking tweet:', error)

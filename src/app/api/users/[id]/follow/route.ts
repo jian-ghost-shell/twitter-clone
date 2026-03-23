@@ -54,6 +54,15 @@ export async function POST(
       }
     })
 
+    // Create notification
+    await prisma.notification.create({
+      data: {
+        type: 'follow',
+        userId: followingId,
+        actorId: followerId,
+      },
+    })
+
     return NextResponse.json({ following: true })
   } catch (error) {
     console.error('Error following user:', error)
