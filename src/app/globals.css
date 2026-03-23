@@ -929,7 +929,7 @@ body {
 
 /* Notification Dropdown */
 .notification-wrapper {
-  position: relative;
+  position: static;
 }
 
 .notification-bell {
@@ -967,16 +967,16 @@ body {
 }
 
 .notification-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
+  top: 60px;
+  right: 8px;
   width: 360px;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - 16px);
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 9999;
   overflow: hidden;
 }
 
