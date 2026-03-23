@@ -971,6 +971,7 @@ body {
   top: calc(100% + 8px);
   right: 0;
   width: 360px;
+  max-width: calc(100vw - 32px);
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 16px;
