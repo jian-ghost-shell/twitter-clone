@@ -16,22 +16,20 @@
   --card-bg: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark mode - Twitter style */
-    --bg-primary: #15202b;        /* Main background - dark blue-gray */
-    --bg-secondary: #192734;     /* Card background */
-    --bg-tertiary: #273340;       /* Hover states */
-    --text-primary: #e7e9ea;      /* Primary text - light gray */
-    --text-secondary: #8b98a5;    /* Secondary text - medium gray */
-    --border: #38444d;            /* Borders - subtle gray */
-    --accent: #1d9bf0;           /* Twitter blue */
-    --accent-hover: #1a8cd8;
-    --danger: #f4212e;
-    --success: #00ba7c;
-    --like: #f91880;
-    --card-bg: #192734;
-  }
+[data-theme="dark"] {
+  /* Dark mode - Twitter style */
+  --bg-primary: #15202b;        /* Main background - dark blue-gray */
+  --bg-secondary: #192734;     /* Card background */
+  --bg-tertiary: #273340;       /* Hover states */
+  --text-primary: #e7e9ea;      /* Primary text - light gray */
+  --text-secondary: #8b98a5;    /* Secondary text - medium gray */
+  --border: #38444d;            /* Borders - subtle gray */
+  --accent: #1d9bf0;           /* Twitter blue */
+  --accent-hover: #1a8cd8;
+  --danger: #f4212e;
+  --success: #00ba7c;
+  --like: #f91880;
+  --card-bg: #192734;
 }
 
 @theme inline {
@@ -41,11 +39,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 * {
@@ -913,6 +909,22 @@ body {
 .login-prompt p {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+/* Theme Toggle */
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  background: rgba(29, 155, 240, 0.1);
 }
 
 /* Auth Pages */

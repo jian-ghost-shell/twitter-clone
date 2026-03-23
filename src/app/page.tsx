@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { TweetForm } from '@/components/TweetForm'
 import { Feed } from '@/components/Feed'
 import { AuthButton } from '@/components/AuthButton'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 type TabType = 'home' | 'following'
 
@@ -25,6 +26,7 @@ export default function Home() {
       <header className="home-header">
         <h1>Home</h1>
         <div className="header-actions">
+          <ThemeToggle />
           <Link href="/search" className="search-icon">🔍</Link>
           <Link href="/bookmarks" className="bookmarks-icon">🔖</Link>
           <AuthButton />
