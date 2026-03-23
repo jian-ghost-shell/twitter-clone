@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { TweetList } from './TweetList'
 
@@ -33,22 +33,75 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
   const { data: session } = useSession()
   const [tweets, setTweets] = useState<Tweet[]>([])
   const [loading, setLoading] = useState(true)
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const observerRef = useRef<HTMLDivElement>(null)
 
-  const fetchTweets = async () => {
-    setLoading(true)
+  const fetchTweets = async (isRefresh = false) => {
+    if (isRefresh) {
+      setLoading(true)
+    }
     try {
-      const res = await fetch(endpoint)
+      const url = endpoint
+      const res = await fetch(url)
       const data = await res.json()
-      setTweets(data)
+      
+      if (Array.isArray(data)) {
+        // Legacy format (no pagination)
+        setTweets(data)
+        setHasMore(false)
+      } else {
+        // New paginated format
+        setTweets(data.tweets)
+        setCursor(data.nextCursor)
+        setHasMore(data.nextCursor !== null)
+      }
     } catch (error) {
       console.error('Error fetching tweets:', error)
     }
     setLoading(false)
   }
 
+  const fetchMoreTweets = async () => {
+    if (loadingMore || !hasMore || !cursor) return
+    setLoadingMore(true)
+    try {
+      const url = `${endpoint}?cursor=${encodeURIComponent(cursor)}`
+      const res = await fetch(url)
+      const data = await res.json()
+      
+      if (Array.isArray(data)) return
+      
+      setTweets(prev => [...prev, ...data.tweets])
+      setCursor(data.nextCursor)
+      setHasMore(data.nextCursor !== null)
+    } catch (error) {
+      console.error('Error fetching more tweets:', error)
+    }
+    setLoadingMore(false)
+  }
+
   useEffect(() => {
-    fetchTweets()
-  }, [refreshTrigger, endpoint])
+    fetchTweets(true)
+  }, [refreshTrigger])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!observerRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchMoreTweets()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(observerRef.current)
+    return () => observer.disconnect()
+  }, [hasMore, loadingMore, loading, cursor])
 
   const handleLike = async (tweetId: string) => {
     if (!session?.user) {
@@ -141,7 +194,7 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
       })
 
       if (res.ok) {
-        fetchTweets()
+        fetchTweets(true)
       }
     } catch (error) {
       console.error('Error creating reply:', error)
@@ -195,12 +248,24 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
   }
 
   return (
-    <TweetList 
-      tweets={tweets}
-      onLike={handleLike}
-      onRetweet={handleRetweet}
-      onReply={handleReply}
-      onBookmark={handleBookmark}
-    />
+    <div>
+      <TweetList
+        tweets={tweets}
+        onLike={handleLike}
+        onRetweet={handleRetweet}
+        onReply={handleReply}
+        onBookmark={handleBookmark}
+      />
+      
+      {/* Infinite scroll trigger */}
+      <div ref={observerRef} className="feed-scroll-trigger">
+        {loadingMore && (
+          <div className="feed-loading-more">Loading more...</div>
+        )}
+        {!hasMore && tweets.length > 0 && (
+          <div className="feed-end">You're all caught up ✨</div>
+        )}
+      </div>
+    </div>
   )
 }
