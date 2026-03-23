@@ -212,6 +212,43 @@ body {
   text-decoration: underline;
 }
 
+/* Retweet styles */
+.retweet-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.retweet-icon {
+  font-size: 14px;
+}
+
+.retweet-user {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.retweet-user:hover {
+  text-decoration: underline;
+}
+
+.original-tweet-link {
+  text-decoration: none;
+  display: block;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+
+.original-tweet-link:hover {
+  background: var(--bg-secondary);
+}
+
 .tweet-text {
   color: var(--text-primary);
   font-size: 16px;

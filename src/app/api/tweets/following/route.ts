@@ -45,6 +45,24 @@ export async function GET(request: Request) {
             image: true
           }
         },
+        retweetOf: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            },
+            _count: {
+              select: {
+                likes: true,
+                retweets: true,
+                replies: true
+              }
+            }
+          }
+        },
         _count: {
           select: {
             likes: true,
@@ -65,23 +83,30 @@ export async function GET(request: Request) {
       ? results[results.length - 1].createdAt.toISOString()
       : null
 
-    // Get user's likes and retweets
+    // Get user's likes
     const likes = await prisma.like.findMany({
       where: { userId, tweetId: { in: results.map(t => t.id) } },
       select: { tweetId: true }
     })
     const userLikes = likes.map(l => l.tweetId)
 
-    const retweets = await prisma.retweet.findMany({
-      where: { userId, tweetId: { in: results.map(t => t.id) } },
-      select: { tweetId: true }
+    // Get user's retweets
+    const retweetTweetIds = results.map(t => t.retweetOfId || t.id)
+    const userRetweets = await prisma.tweet.findMany({
+      where: {
+        userId,
+        retweetOfId: { in: retweetTweetIds }
+      },
+      select: { retweetOfId: true }
     })
-    const userRetweets = retweets.map(r => r.tweetId)
+    const userRetweetOfIds = userRetweets.map(r => r.retweetOfId!)
 
     const tweetsWithStatus = results.map(tweet => ({
       ...tweet,
       liked: userLikes.includes(tweet.id),
-      retweeted: userRetweets.includes(tweet.id)
+      retweeted: tweet.retweetOfId
+        ? tweet.userId === userId
+        : userRetweetOfIds.includes(tweet.id)
     }))
 
     return NextResponse.json({ tweets: tweetsWithStatus, nextCursor })

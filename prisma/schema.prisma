@@ -96,6 +96,13 @@ model Tweet {
   // Reverse relation for replies
   replies   Tweet[]  @relation("ReplyTo")
 
+  // Retweet of another tweet
+  retweetOfId String?
+  retweetOf   Tweet?  @relation("RetweetOf", fields: [retweetOfId], references: [id])
+
+  // Reverse: tweets that are retweets of this one
+  retweetsOfThis Tweet[] @relation("RetweetOf")
+
   // Bookmarks
   bookmarks Bookmark[]
 

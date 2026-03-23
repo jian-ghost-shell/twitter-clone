@@ -14,51 +14,50 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id: tweetId } = await params
+    const { id: originalTweetId } = await params
 
-    // Check if tweet exists
-    const tweet = await prisma.tweet.findUnique({
-      where: { id: tweetId }
+    // Check if original tweet exists
+    const originalTweet = await prisma.tweet.findUnique({
+      where: { id: originalTweetId }
     })
 
-    if (!tweet) {
+    if (!originalTweet) {
       return NextResponse.json({ error: 'Tweet not found' }, { status: 404 })
     }
 
-    // Check if already retweeted
-    const existingRetweet = await prisma.retweet.findUnique({
+    // Check if already retweeted by this user (look for existing retweet tweet)
+    const existingRetweet = await prisma.tweet.findFirst({
       where: {
-        userId_tweetId: {
-          userId: session.user.id,
-          tweetId
-        }
+        userId: session.user.id,
+        retweetOfId: originalTweetId
       }
     })
 
     if (existingRetweet) {
       // Remove retweet
-      await prisma.retweet.delete({
+      await prisma.tweet.delete({
         where: { id: existingRetweet.id }
       })
       return NextResponse.json({ retweeted: false })
     }
 
-    // Create retweet
-    await prisma.retweet.create({
+    // Create a new tweet that is a retweet of the original
+    await prisma.tweet.create({
       data: {
+        content: '',
         userId: session.user.id,
-        tweetId
+        retweetOfId: originalTweetId,
       }
     })
 
     // Create notification (but not for self-retweets)
-    if (tweet.userId !== session.user.id) {
+    if (originalTweet.userId !== session.user.id) {
       await prisma.notification.create({
         data: {
           type: 'retweet',
-          userId: tweet.userId,
+          userId: originalTweet.userId,
           actorId: session.user.id,
-          tweetId,
+          tweetId: originalTweetId,
         },
       })
     }

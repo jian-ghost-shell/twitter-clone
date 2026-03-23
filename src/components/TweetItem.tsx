@@ -25,6 +25,22 @@ interface TweetItemProps {
         image: string | null
       }
     } | null
+    retweetOf?: {
+      id: string
+      content: string
+      image: string | null
+      createdAt: string
+      user: {
+        id: string
+        name: string | null
+        image: string | null
+      }
+      _count: {
+        likes: number
+        retweets: number
+        replies: number
+      }
+    } | null
     _count: {
       likes: number
       retweets: number
@@ -55,6 +71,59 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark, onDel
     })
   }
 
+  // This is a retweet - show original tweet
+  if (tweet.retweetOf) {
+    const original = tweet.retweetOf
+    return (
+      <div className="tweet">
+        <div className="tweet-avatar">
+          {tweet.user.image ? (
+            <img src={tweet.user.image} alt={tweet.user.name || 'User'} />
+          ) : (
+            <div className="tweet-avatar-placeholder">
+              {tweet.user.name?.[0] || '?'}
+            </div>
+          )}
+        </div>
+        <div className="tweet-content">
+          <div className="retweet-header">
+            <span className="retweet-icon">🔁</span>
+            <Link href={`/profile/${tweet.user.id}`} className="retweet-user">
+              {tweet.user.name || 'Anonymous'} retweeted
+            </Link>
+          </div>
+
+          {/* Original tweet */}
+          <Link href={`/tweet/${original.id}`} className="original-tweet-link">
+            <div className="tweet-header">
+              <span className="tweet-name">
+                {original.user.name || 'Anonymous'}
+              </span>
+              <span className="tweet-time">{formatDate(original.createdAt)}</span>
+            </div>
+            <div className="tweet-text">{original.content}</div>
+            {original.image && (
+              <div className="tweet-image">
+                <img src={original.image} alt="Tweet image" />
+              </div>
+            )}
+          </Link>
+
+          <TweetActions
+            tweet={{ ...tweet, id: original.id, user: original.user, _count: original._count }}
+            currentUserId={session?.user?.id}
+            onLike={onLike}
+            onRetweet={onRetweet}
+            onReply={onReply}
+            onBookmark={onBookmark}
+            onDelete={tweet.user.id === session?.user?.id ? onDelete : undefined}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Normal tweet
   return (
     <div className="tweet">
       <div className="tweet-avatar">

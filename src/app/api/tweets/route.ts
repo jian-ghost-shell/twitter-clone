@@ -35,6 +35,24 @@ export async function GET(request: Request) {
             }
           }
         },
+        retweetOf: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            },
+            _count: {
+              select: {
+                likes: true,
+                retweets: true,
+                replies: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             likes: true,
@@ -57,7 +75,7 @@ export async function GET(request: Request) {
 
     // Add liked/retweeted status for current user
     let userLikes: string[] = []
-    let userRetweets: string[] = []
+    let userRetweetOfIds: string[] = []
 
     if (userId) {
       const likes = await prisma.like.findMany({
@@ -66,17 +84,27 @@ export async function GET(request: Request) {
       })
       userLikes = likes.map(l => l.tweetId)
 
-      const retweets = await prisma.retweet.findMany({
-        where: { userId, tweetId: { in: results.map(t => t.id) } },
-        select: { tweetId: true }
+      // Check if user has retweeted any of the original tweets
+      const retweetTweetIds = results
+        .map(t => t.retweetOfId || t.id)
+      const userRetweets = await prisma.tweet.findMany({
+        where: {
+          userId,
+          retweetOfId: { in: retweetTweetIds }
+        },
+        select: { retweetOfId: true }
       })
-      userRetweets = retweets.map(r => r.tweetId)
+      userRetweetOfIds = userRetweets.map(r => r.retweetOfId!)
     }
 
     const tweetsWithStatus = results.map(tweet => ({
       ...tweet,
       liked: userLikes.includes(tweet.id),
-      retweeted: userRetweets.includes(tweet.id)
+      // A tweet is "retweeted" by user if it's a retweet that the user created,
+      // OR if it's an original tweet that the user has retweeted
+      retweeted: tweet.retweetOfId
+        ? tweet.userId === userId  // it's a retweet, check if current user is the author
+        : userRetweetOfIds.includes(tweet.id)  // it's original, check if user retweeted it
     }))
 
     return NextResponse.json({
