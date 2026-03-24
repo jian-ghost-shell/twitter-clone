@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { api } from '@/lib/api'
 
 interface TweetFormProps {
   currentUser?: {
@@ -60,24 +61,21 @@ export function TweetForm({ currentUser, onTweetCreated, replyToId }: TweetFormP
     }
 
     setLoading(true)
-    const res = await fetch('/api/tweets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      await api.tweets.create({
         content,
-        image,
-        userId: currentUser.id,
-        parentId: replyToId || null
+        image: image || undefined,
+        parentId: replyToId || null,
       })
-    })
-
-    if (res.ok) {
       setContent('')
       setImage(null)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
       onTweetCreated?.()
+    } catch (error) {
+      console.error('Error posting tweet:', error)
+      alert('Failed to post tweet. Please try again.')
     }
     setLoading(false)
   }

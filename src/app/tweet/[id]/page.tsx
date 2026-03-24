@@ -6,35 +6,7 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { TweetItem } from '@/components/TweetItem'
 import { TweetForm } from '@/components/TweetForm'
-
-interface Tweet {
-  id: string
-  content: string
-  image: string | null
-  createdAt: string
-  parent: {
-    id: string
-    content: string
-    user: {
-      id: string
-      name: string | null
-      image: string | null
-    }
-  } | null
-  user: {
-    id: string
-    name: string | null
-    image: string | null
-  }
-  replies?: any[]
-  _count: {
-    likes: number
-    retweets: number
-    replies: number
-  }
-  liked?: boolean
-  retweeted?: boolean
-}
+import { api, Tweet } from '@/lib/api'
 
 export default function TweetPage() {
   const params = useParams()
@@ -50,10 +22,8 @@ export default function TweetPage() {
     const fetchTweet = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/tweets/${tweetId}`)
-        if (res.ok) {
-          setTweet(await res.json())
-        }
+        const tweetData = await api.tweets.get(tweetId)
+        setTweet(tweetData)
       } catch (error) {
         console.error('Error fetching tweet:', error)
       }
@@ -88,7 +58,7 @@ export default function TweetPage() {
     })
 
     try {
-      await fetch(`/api/tweets/${tweetId}/like`, { method: 'POST' })
+      await api.tweets.like(tweetId)
     } catch (error) {
       console.error('Error liking tweet:', error)
     }
@@ -113,7 +83,7 @@ export default function TweetPage() {
     })
 
     try {
-      await fetch(`/api/tweets/${tweetId}/retweet`, { method: 'POST' })
+      await api.tweets.retweet(tweetId)
     } catch (error) {
       console.error('Error retweeting:', error)
     }
@@ -129,15 +99,8 @@ export default function TweetPage() {
     if (!content?.trim()) return
 
     try {
-      const res = await fetch(`/api/tweets/${tweetId}/reply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-      })
-
-      if (res.ok) {
-        setRefreshTrigger(prev => prev + 1)
-      }
+      await api.tweets.reply(tweetId, content)
+      setRefreshTrigger(prev => prev + 1)
     } catch (error) {
       console.error('Error creating reply:', error)
     }

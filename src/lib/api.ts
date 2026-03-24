@@ -38,6 +38,7 @@ export interface Tweet {
   liked?: boolean
   retweeted?: boolean
   bookmarked?: boolean
+  replies?: any[]
 }
 
 export interface User {
@@ -88,6 +89,11 @@ async function fetcher<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json()
 }
 
+export interface SearchResults {
+  tweets: Tweet[]
+  users: User[]
+}
+
 // Centralized API client
 export const api = {
   tweets: {
@@ -97,7 +103,7 @@ export const api = {
       ),
     byUser: (userId: string) =>
       fetcher<Tweet[]>(`/api/users/${userId}/tweets`),
-    create: (data: { content: string; image?: string }) =>
+    create: (data: { content: string; image?: string; parentId?: string | null }) =>
       fetcher<Tweet>('/api/tweets', { method: 'POST', body: JSON.stringify(data) }),
     delete: (tweetId: string) =>
       fetcher<void>(`/api/tweets/${tweetId}`, { method: 'DELETE' }),
@@ -112,6 +118,8 @@ export const api = {
       }),
     bookmark: (tweetId: string) =>
       fetcher<{ bookmarked: boolean }>(`/api/tweets/${tweetId}/bookmark`, { method: 'POST' }),
+    get: (tweetId: string) =>
+      fetcher<Tweet>(`/api/tweets/${tweetId}`),
   },
   users: {
     get: (userId: string) => fetcher<User>(`/api/users/${userId}`),
@@ -131,5 +139,9 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ id }),
       }),
+  },
+  search: {
+    all: (q: string) =>
+      fetcher<SearchResults>(`/api/search?q=${encodeURIComponent(q)}`),
   },
 }

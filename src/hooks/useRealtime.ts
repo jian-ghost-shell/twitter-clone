@@ -3,10 +3,10 @@
 import { useEffect, useRef } from 'react'
 import PusherClient from 'pusher-js'
 
-// Pusher client singleton
+// Pusher client singleton — exported for reuse by other components
 let pusherClient: PusherClient | null = null
 
-function getPusherClient(): PusherClient {
+export function getPusherClient(): PusherClient {
   if (!pusherClient) {
     pusherClient = new PusherClient(
       (process.env.NEXT_PUBLIC_PUSHER_KEY || '').trim(),

@@ -3,32 +3,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-
-interface Tweet {
-  id: string
-  content: string
-  image: string | null
-  createdAt: string
-  user: {
-    id: string
-    name: string | null
-    image: string | null
-  }
-  _count: {
-    likes: number
-    retweets: number
-    replies: number
-  }
-}
-
-interface User {
-  id: string
-  name: string | null
-  email: string | null
-  image: string | null
-  tweetsCount: number
-  followersCount: number
-}
+import { api } from '@/lib/api'
+import { Tweet, User } from '@/lib/api'
 
 function SearchContent() {
   const searchParams = useSearchParams()
@@ -46,8 +22,7 @@ function SearchContent() {
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
-      const data = await res.json()
+      const data = await api.search.all(q)
       setResults(data)
     } catch (error) {
       console.error('Search failed:', error)

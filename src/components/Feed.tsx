@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { TweetList } from './TweetList'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useTweets, Tweet } from '@/hooks/useTweets'
+import { getPusherClient } from '@/hooks/useRealtime'
 
 interface FeedProps {
   refreshTrigger?: number
@@ -50,10 +51,7 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
     const key = (process.env.NEXT_PUBLIC_PUSHER_KEY || '').trim()
     if (!key) return
 
-    const Pusher = require('pusher-js')
-    const pusher = new Pusher(key, {
-      cluster: (process.env.NEXT_PUBLIC_PUSHER_CLUSTER || '').trim(),
-    })
+    const pusher = getPusherClient()
 
     const channel = pusher.subscribe('public-global')
 
