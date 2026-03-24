@@ -78,7 +78,7 @@ export function NotificationDropdown() {
       // Just refresh the count silently
       fetchNotifications()
     }
-  })
+  }, session?.user?.id)
 
   // Close on outside click
   useEffect(() => {

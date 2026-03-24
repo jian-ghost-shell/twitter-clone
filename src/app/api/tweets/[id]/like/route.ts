@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { broadcast } from '@/lib/broadcast'
+import { triggerNotification } from '@/lib/pusher-server'
 
 // POST /api/tweets/[id]/like - Like a tweet
 export async function POST(
@@ -54,7 +54,7 @@ export async function POST(
 
     // Create notification (but not for self-likes)
     if (tweet.userId !== session.user.id) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           type: 'like',
           userId: tweet.userId,
@@ -63,11 +63,13 @@ export async function POST(
         },
       })
 
-      // Real-time: broadcast to the tweet owner
-      broadcast({
-        type: 'notification',
-        payload: { tweetId, type: 'like', actorId: session.user.id }
-      }, tweet.userId)
+      // Real-time: send Pusher notification to the tweet owner
+      await triggerNotification(tweet.userId, {
+        id: notification.id,
+        type: 'like',
+        actorId: session.user.id,
+        tweetId,
+      }).catch(console.error)
     }
 
     return NextResponse.json({ liked: true })

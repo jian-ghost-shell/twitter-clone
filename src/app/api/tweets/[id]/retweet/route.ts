@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { triggerNotification, triggerTweetCreated } from '@/lib/pusher-server'
 
 // POST /api/tweets/[id]/retweet - Retweet a tweet
 export async function POST(
@@ -42,13 +43,27 @@ export async function POST(
     }
 
     // Create a new tweet that is a retweet of the original
-    await prisma.tweet.create({
+    const retweetTweet = await prisma.tweet.create({
       data: {
         content: '',
         userId: session.user.id,
         retweetOfId: originalTweetId,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, image: true }
+        }
       }
     })
+
+    // Broadcast to all followers' feeds
+    await triggerTweetCreated({
+      id: retweetTweet.id,
+      content: retweetTweet.content,
+      userId: retweetTweet.userId,
+      user: retweetTweet.user,
+      createdAt: retweetTweet.createdAt.toISOString(),
+    }).catch(console.error)
 
     // Create notification (but not for self-retweets)
     if (originalTweet.userId !== session.user.id) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { triggerNotification, triggerTweetCreated } from '@/lib/pusher-server'
 
 // POST /api/tweets/[id]/reply - Reply to a tweet
 export async function POST(
@@ -49,9 +50,18 @@ export async function POST(
       }
     })
 
+    // Broadcast new reply to all followers
+    await triggerTweetCreated({
+      id: reply.id,
+      content: reply.content,
+      userId: reply.userId,
+      user: reply.user,
+      createdAt: reply.createdAt.toISOString(),
+    }).catch(console.error)
+
     // Create notification (but not for self-replies)
     if (parentTweet.userId !== session.user.id) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           type: 'reply',
           userId: parentTweet.userId,
@@ -59,6 +69,14 @@ export async function POST(
           tweetId: reply.id,
         },
       })
+
+      // Real-time notification
+      await triggerNotification(parentTweet.userId, {
+        id: notification.id,
+        type: 'reply',
+        actorId: session.user.id,
+        tweetId: reply.id,
+      }).catch(console.error)
     }
 
     return NextResponse.json(reply)

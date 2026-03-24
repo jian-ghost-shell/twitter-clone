@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { triggerNotification } from '@/lib/pusher-server'
 
 // POST /api/users/[id]/follow - Follow a user
 // DELETE /api/users/[id]/follow - Unfollow a user
@@ -55,13 +56,20 @@ export async function POST(
     })
 
     // Create notification
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         type: 'follow',
         userId: followingId,
         actorId: followerId,
       },
     })
+
+    // Real-time notification
+    await triggerNotification(followingId, {
+      id: notification.id,
+      type: 'follow',
+      actorId: followerId,
+    }).catch(console.error)
 
     return NextResponse.json({ following: true })
   } catch (error) {

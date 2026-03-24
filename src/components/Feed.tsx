@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { TweetList } from './TweetList'
 
@@ -102,6 +102,30 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
     observer.observe(observerRef.current)
     return () => observer.disconnect()
   }, [hasMore, loadingMore, loading, cursor])
+
+  // Real-time: subscribe to global Pusher channel for new tweets
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return
+
+    const Pusher = require('pusher-js')
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+    })
+
+    const channel = pusher.subscribe('private-global')
+
+    channel.bind('tweet:created', (data: { tweet: Tweet }) => {
+      // Don't prepend if this is our own tweet (it already appears via the form)
+      if (session?.user?.id && data.tweet.user.id === session.user.id) return
+      // Prepend new tweet to home feed
+      setTweets(prev => [data.tweet, ...prev])
+    })
+
+    return () => {
+      channel.unbind_all()
+      pusher.unsubscribe('private-global')
+    }
+  }, [session?.user?.id])
 
   const handleLike = async (tweetId: string) => {
     if (!session?.user) {

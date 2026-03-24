@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { triggerTweetCreated } from '@/lib/pusher-server'
 
 // GET /api/tweets - Get all tweets with cursor-based pagination
 export async function GET(request: Request) {
@@ -148,6 +149,15 @@ export async function POST(request: Request) {
         },
       },
     })
+
+    // Broadcast new tweet to all connected clients
+    await triggerTweetCreated({
+      id: tweet.id,
+      content: tweet.content,
+      userId: tweet.userId,
+      user: tweet.user,
+      createdAt: tweet.createdAt.toISOString(),
+    }).catch(console.error)
 
     return NextResponse.json(tweet)
   } catch (error) {
