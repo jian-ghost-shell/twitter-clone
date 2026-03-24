@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { TweetList } from './TweetList'
+import { VirtualizedTweetList } from './VirtualizedTweetList'
 import { ErrorBoundary } from './ErrorBoundary'
 import { useTweets, Tweet } from '@/hooks/useTweets'
 import { getPusherClient } from '@/hooks/useRealtime'
@@ -27,23 +27,10 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
     prependTweet,
   } = useTweets({ endpoint, refreshTrigger })
 
-  const observerRef = useRef<HTMLDivElement>(null)
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    if (!observerRef.current) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          fetchMore()
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    observer.observe(observerRef.current)
-    return () => observer.disconnect()
+  const handleTriggerIntersect = useCallback(() => {
+    if (hasMore && !loading) {
+      fetchMore()
+    }
   }, [hasMore, loading, fetchMore])
 
   // Real-time: subscribe to global Pusher channel for new tweets
@@ -106,27 +93,20 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
   }
 
   return (
-    <div>
+    <div style={{ height: '100%' }}>
       <ErrorBoundary>
-        <TweetList
+        <VirtualizedTweetList
           tweets={tweets}
           onLike={handleLike}
           onRetweet={handleRetweet}
           onReply={handleReply}
           onBookmark={handleBookmark}
           onDelete={handleDelete}
+          onTriggerIntersect={handleTriggerIntersect}
+          isLoading={loading}
+          hasMore={hasMore}
         />
       </ErrorBoundary>
-      
-      {/* Infinite scroll trigger */}
-      <div ref={observerRef} className="feed-scroll-trigger">
-        {loading && tweets.length > 0 && (
-          <div className="feed-loading-more">Loading more...</div>
-        )}
-        {!hasMore && tweets.length > 0 && (
-          <div className="feed-end">You're all caught up ✨</div>
-        )}
-      </div>
     </div>
   )
 }
