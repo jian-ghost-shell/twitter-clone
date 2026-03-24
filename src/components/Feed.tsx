@@ -14,6 +14,19 @@ interface Tweet {
     name: string | null
     image: string | null
   }
+  parent?: {
+    id: string
+    content: string
+    user: { id: string; name: string | null; image: string | null }
+  } | null
+  retweetOf?: {
+    id: string
+    content: string
+    image: string | null
+    createdAt: string
+    user: { id: string; name: string | null; image: string | null }
+    _count: { likes: number; retweets: number; replies: number }
+  } | null
   _count: {
     likes: number
     retweets: number
@@ -115,11 +128,32 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
 
     const channel = pusher.subscribe('public-global')
 
-    channel.bind('tweet:created', (data: { tweet: Tweet }) => {
-      // Don't prepend if this is our own tweet (it already appears via the form)
-      if (session?.user?.id && data.tweet.user.id === session.user.id) return
-      // Prepend new tweet to home feed
-      setTweets(prev => [data.tweet, ...prev])
+    channel.bind('tweet:created', (data: unknown) => {
+      try {
+        const event = data as { tweet?: Partial<Tweet> }
+        if (!event?.tweet?.user?.id) return
+        if (session?.user?.id && event.tweet.user.id === session.user.id) return
+        const fullTweet: Tweet = {
+          id: event.tweet.id || '',
+          content: event.tweet.content || '',
+          image: event.tweet.image || null,
+          createdAt: event.tweet.createdAt || new Date().toISOString(),
+          user: event.tweet.user,
+          parent: event.tweet.parent,
+          retweetOf: event.tweet.retweetOf,
+          _count: event.tweet._count || { likes: 0, retweets: 0, replies: 0 },
+          liked: false,
+          retweeted: false,
+          bookmarked: false,
+        }
+        setTweets(prev => [fullTweet, ...prev])
+      } catch (e) {
+        console.error('[Pusher] tweet:created error:', e)
+      }
+    })
+
+    channel.bind('pusher:error', (err: unknown) => {
+      console.error('[Pusher] connection error:', err)
     })
 
     return () => {
