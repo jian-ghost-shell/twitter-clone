@@ -43,8 +43,9 @@ export function VirtualizedTweetList({ tweets, onLike, onRetweet, onReply, onBoo
   const virtualizer = useVirtualizer({
     count: tweets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 350,
+    estimateSize: () => 200,
     overscan: 5,
+    measureElement: (el) => el.getBoundingClientRect().height,
   })
 
   // Intersection Observer for infinite scroll
