@@ -4,25 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRealtime } from '@/hooks/useRealtime'
-
-type NotificationType = 'like' | 'retweet' | 'reply' | 'follow'
-
-interface Notification {
-  id: string
-  type: NotificationType
-  actor: {
-    id: string
-    name: string | null
-    username: string
-    image: string | null
-  }
-  tweet?: {
-    id: string
-    content: string
-  } | null
-  read: boolean
-  createdAt: string
-}
+import { api, Notification, NotificationType } from '@/lib/api'
 
 const typeIcon = (type: NotificationType) => {
   switch (type) {
@@ -55,11 +37,8 @@ export function NotificationDropdown() {
     if (!session) return
     setLoading(true)
     try {
-      const res = await fetch('/api/notifications')
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(data)
-      }
+      const data = await api.notifications.list()
+      setNotifications(data)
     } catch (e) {
       console.error('Failed to fetch notifications', e)
     }
@@ -92,11 +71,7 @@ export function NotificationDropdown() {
   }, [open])
 
   const markAsRead = async (id: string) => {
-    await fetch('/api/notifications/read', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
+    await api.notifications.markRead(id)
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     )

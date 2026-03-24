@@ -2,19 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { Tweet, useTweets } from './useTweets'
+import { useTweets } from './useTweets'
+import { api, User, Tweet } from '@/lib/api'
 
-export interface User {
-  id: string
-  name: string | null
-  email: string | null
-  image: string | null
-  createdAt: string
-  followersCount: number
-  followingCount: number
-  tweetsCount: number
-  isFollowing: boolean
-}
+export type { User, Tweet }
 
 interface UseProfileOptions {
   userId: string
@@ -55,13 +46,10 @@ export function useProfile({ userId }: UseProfileOptions): UseProfileReturn {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(`/api/users/${userId}`)
-        if (res.ok) {
-          const userData = await res.json()
-          setUser(userData)
-          setLocalIsFollowing(userData.isFollowing)
-          setFollowersCount(userData.followersCount)
-        }
+        const userData = await api.users.get(userId)
+        setUser(userData)
+        setLocalIsFollowing(userData.isFollowing)
+        setFollowersCount(userData.followersCount)
       } catch (error) {
         console.error('Error fetching user:', error)
       }
@@ -79,24 +67,19 @@ export function useProfile({ userId }: UseProfileOptions): UseProfileReturn {
       return
     }
 
-    const method = localIsFollowing ? 'DELETE' : 'POST'
-    
     // Optimistic update
     setLocalIsFollowing(!localIsFollowing)
     setFollowersCount(prev => localIsFollowing ? prev - 1 : prev + 1)
 
     try {
-      const res = await fetch(`/api/users/${userId}/follow`, { method })
-      if (res.ok) {
-        const data = await res.json()
-        setLocalIsFollowing(data.following)
-        setFollowersCount(prev => data.following ? prev + 1 : prev - 1)
-        // Refresh user data to get accurate counts
-        const userRes = await fetch(`/api/users/${userId}`)
-        if (userRes.ok) {
-          setUser(await userRes.json())
-        }
-      }
+      const data = localIsFollowing
+        ? await api.users.unfollow(userId)
+        : await api.users.follow(userId)
+      setLocalIsFollowing(data.following)
+      setFollowersCount(prev => data.following ? prev + 1 : prev - 1)
+      // Refresh user data to get accurate counts
+      const userData = await api.users.get(userId)
+      setUser(userData)
     } catch (error) {
       console.error('Error following/unfollowing:', error)
       // Rollback

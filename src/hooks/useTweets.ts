@@ -2,39 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { api, Tweet } from '@/lib/api'
 
-export interface Tweet {
-  id: string
-  content: string
-  image: string | null
-  createdAt: string
-  user: {
-    id: string
-    name: string | null
-    image: string | null
-  }
-  parent?: {
-    id: string
-    content: string
-    user: { id: string; name: string | null; image: string | null }
-  } | null
-  retweetOf?: {
-    id: string
-    content: string
-    image: string | null
-    createdAt: string
-    user: { id: string; name: string | null; image: string | null }
-    _count: { likes: number; retweets: number; replies: number }
-  } | null
-  _count: {
-    likes: number
-    retweets: number
-    replies: number
-  }
-  liked?: boolean
-  retweeted?: boolean
-  bookmarked?: boolean
-}
+export type { Tweet }
 
 interface UseTweetsOptions {
   endpoint?: string
@@ -68,8 +38,16 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
       setLoading(true)
     }
     try {
-      const res = await fetch(endpoint)
-      const data = await res.json()
+      let data: { tweets: Tweet[]; nextCursor: string | null } | Tweet[]
+      if (endpoint === '/api/tweets') {
+        data = await api.tweets.list()
+      } else if (endpoint.startsWith('/api/users/') && endpoint.includes('/tweets')) {
+        const userId = endpoint.split('/')[3]
+        data = { tweets: await api.tweets.byUser(userId), nextCursor: null }
+      } else {
+        const res = await fetch(endpoint)
+        data = await res.json()
+      }
 
       if (Array.isArray(data)) {
         setTweets(data)
@@ -89,15 +67,12 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
     if (loadingMore || !hasMore || !cursor) return
     setLoadingMore(true)
     try {
-      const url = `${endpoint}?cursor=${encodeURIComponent(cursor)}`
-      const res = await fetch(url)
-      const data = await res.json()
-
-      if (Array.isArray(data)) return
-
-      setTweets(prev => [...prev, ...data.tweets])
-      setCursor(data.nextCursor)
-      setHasMore(data.nextCursor !== null)
+      if (endpoint === '/api/tweets') {
+        const data = await api.tweets.list({ cursor })
+        setTweets(prev => [...prev, ...data.tweets])
+        setCursor(data.nextCursor)
+        setHasMore(data.nextCursor !== null)
+      }
     } catch (error) {
       console.error('Error fetching more tweets:', error)
     }
@@ -141,7 +116,7 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
     }))
 
     try {
-      await fetch(`/api/tweets/${tweetId}/like`, { method: 'POST' })
+      await api.tweets.like(tweetId)
     } catch (error) {
       console.error('Error liking tweet:', error)
       // Rollback
@@ -182,7 +157,7 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
     }))
 
     try {
-      await fetch(`/api/tweets/${tweetId}/retweet`, { method: 'POST' })
+      await api.tweets.retweet(tweetId)
     } catch (error) {
       console.error('Error retweeting:', error)
       // Rollback
@@ -206,15 +181,8 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
     if (!content?.trim()) return
 
     try {
-      const res = await fetch(`/api/tweets/${tweetId}/reply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-      })
-
-      if (res.ok) {
-        fetchTweets(true)
-      }
+      await api.tweets.reply(tweetId, content)
+      fetchTweets(true)
     } catch (error) {
       console.error('Error creating reply:', error)
     }
@@ -241,7 +209,7 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
     }))
 
     try {
-      await fetch(`/api/tweets/${tweetId}/bookmark`, { method: 'POST' })
+      await api.tweets.bookmark(tweetId)
     } catch (error) {
       console.error('Error bookmarking tweet:', error)
       // Rollback
@@ -257,10 +225,8 @@ export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseT
   // Delete
   const handleDelete = useCallback(async (tweetId: string) => {
     try {
-      const res = await fetch(`/api/tweets/${tweetId}`, { method: 'DELETE' })
-      if (res.ok) {
-        setTweets(prev => prev.filter(t => t.id !== tweetId))
-      }
+      await api.tweets.delete(tweetId)
+      setTweets(prev => prev.filter(t => t.id !== tweetId))
     } catch (error) {
       console.error('Error deleting tweet:', error)
     }

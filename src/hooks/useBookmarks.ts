@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Tweet } from './useTweets'
+import { api } from '@/lib/api'
 
 interface UseBookmarksReturn {
   bookmarks: Tweet[]
@@ -15,13 +16,8 @@ export function useBookmarks(): UseBookmarksReturn {
   useEffect(() => {
     const fetchBookmarks = async () => {
       try {
-        const res = await fetch('/api/bookmarks')
-        const data = await res.json()
-        if (Array.isArray(data)) {
-          setBookmarks(data)
-        } else if (data.tweets) {
-          setBookmarks(data.tweets)
-        }
+        const data = await api.users.bookmarks()
+        setBookmarks(data)
       } catch (error) {
         console.error('Error fetching bookmarks:', error)
       }
