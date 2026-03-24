@@ -10,6 +10,7 @@ function getPusherClient(): PusherClient {
   if (!pusherClient) {
     pusherClient = new PusherClient(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      authEndpoint: '/api/pusher/auth',
     })
   }
   return pusherClient
@@ -43,20 +44,16 @@ export function useRealtime(onEvent: EventHandler, userId?: string) {
     // Subscribe to user's private channel
     const channel = pusher.subscribe(`private-user-${userId}`)
 
-    channel.bind('tweet:created', (data: { tweet: unknown }) => {
-      onEventRef.current({ type: 'tweet:created', tweet: data.tweet })
-    })
-
-    channel.bind('like:updated', (data: { tweetId: string; liked: boolean; actorId: string }) => {
-      onEventRef.current({ type: 'like:updated', ...data })
-    })
-
     channel.bind('notification', (data: { id: string; type: string; actorId: string; tweetId?: string }) => {
       onEventRef.current({ type: 'notification', notification: data })
     })
 
     channel.bind('pusher:subscription_succeeded', () => {
       console.log('Pusher subscription succeeded')
+    })
+
+    channel.bind('pusher:subscription_error', (err: { error: string }) => {
+      console.error('Pusher subscription error', err)
     })
 
     return () => {

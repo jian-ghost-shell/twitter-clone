@@ -109,10 +109,10 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
 
     const Pusher = require('pusher-js')
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
     })
 
-    const channel = pusher.subscribe('private-global')
+    const channel = pusher.subscribe('public-global')
 
     channel.bind('tweet:created', (data: { tweet: Tweet }) => {
       // Don't prepend if this is our own tweet (it already appears via the form)
@@ -123,7 +123,7 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
 
     return () => {
       channel.unbind_all()
-      pusher.unsubscribe('private-global')
+      pusher.unsubscribe('public-global')
     }
   }, [session?.user?.id])
 

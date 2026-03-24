@@ -13,8 +13,8 @@ export default pusher
 
 // Channel names
 export const CHANNELS = {
-  GLOBAL: 'private-global',
-  USER_PREFIX: 'private-user-',
+  GLOBAL: 'public-global', // public - anyone can subscribe
+  USER_PREFIX: 'private-user-', // private - requires auth
 } as const
 
 // Event types
