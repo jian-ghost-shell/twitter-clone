@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { TweetList } from './TweetList'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -28,10 +28,24 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
     prependTweet,
   } = useTweets({ endpoint, refreshTrigger })
 
-  const handleTriggerIntersect = useCallback(() => {
-    if (hasMore && !loading) {
-      fetchMore()
-    }
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !hasMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [hasMore, loading, fetchMore])
 
   // Real-time: subscribe to global Pusher channel for new tweets
@@ -101,6 +115,17 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
           onDelete={handleDelete}
         />
       </ErrorBoundary>
+      {/* Infinite scroll trigger */}
+      <div ref={scrollRef} className="feed-scroll-trigger">
+        {loading && tweets.length > 0 && (
+          <div className="feed-loading-more">
+            <span className="loading-spinner" />
+          </div>
+        )}
+        {!hasMore && tweets.length > 0 && (
+          <div className="feed-end">You're all caught up ✨</div>
+        )}
+      </div>
     </div>
   )
 }
