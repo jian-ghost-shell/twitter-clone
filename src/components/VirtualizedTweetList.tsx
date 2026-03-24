@@ -43,7 +43,7 @@ export function VirtualizedTweetList({ tweets, onLike, onRetweet, onReply, onBoo
   const virtualizer = useVirtualizer({
     count: tweets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 200,
+    estimateSize: () => 350,
     overscan: 5,
   })
 
