@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTweets } from './useTweets'
 import { api, User, Tweet } from '@/lib/api'
 
@@ -26,10 +27,18 @@ interface UseProfileReturn {
 
 export function useProfile({ userId }: UseProfileOptions): UseProfileReturn {
   const { data: session } = useSession()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [localIsFollowing, setLocalIsFollowing] = useState(false)
-  const [followersCount, setFollowersCount] = useState(0)
+  const queryClient = useQueryClient()
+
+  // User profile query
+  const {
+    data: user,
+    isLoading: loading,
+    refetch: refetchUser,
+  } = useQuery({
+    queryKey: ['user', userId],
+    queryFn: () => api.users.get(userId),
+    enabled: !!userId,
+  })
 
   // Use useTweets for the user's tweets
   const {
@@ -40,60 +49,65 @@ export function useProfile({ userId }: UseProfileOptions): UseProfileReturn {
     handleReply,
     handleBookmark,
     handleDelete,
-    refresh,
   } = useTweets({ endpoint: `/api/users/${userId}/tweets` })
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userData = await api.users.get(userId)
-        setUser(userData)
-        setLocalIsFollowing(userData.isFollowing)
-        setFollowersCount(userData.followersCount)
-      } catch (error) {
-        console.error('Error fetching user:', error)
-      }
-      setLoading(false)
-    }
+  // Follow/unfollow mutation with optimistic update
+  const followMutation = useMutation({
+    mutationFn: (follow: boolean) =>
+      follow ? api.users.follow(userId) : api.users.unfollow(userId),
+    onMutate: async (willFollow) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['user', userId] })
 
-    if (userId) {
-      fetchUser()
-    }
-  }, [userId])
+      // Snapshot previous value
+      const previousUser = queryClient.getQueryData<User>(['user', userId])
+
+      // Optimistically update
+      queryClient.setQueryData<User>(['user', userId], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          isFollowing: willFollow,
+          followersCount: willFollow ? old.followersCount + 1 : old.followersCount - 1,
+        }
+      })
+
+      return { previousUser }
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousUser) {
+        queryClient.setQueryData(['user', userId], context.previousUser)
+      }
+    },
+    onSuccess: (data) => {
+      // Sync with server response
+      queryClient.setQueryData<User>(['user', userId], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          isFollowing: data.following,
+          followersCount: data.following ? old.followersCount + 1 : old.followersCount - 1,
+        }
+      })
+    },
+  })
 
   const follow = useCallback(async () => {
     if (!session?.user) {
       alert('Please sign in to follow')
       return
     }
-
-    // Optimistic update
-    setLocalIsFollowing(!localIsFollowing)
-    setFollowersCount(prev => localIsFollowing ? prev - 1 : prev + 1)
-
-    try {
-      const data = localIsFollowing
-        ? await api.users.unfollow(userId)
-        : await api.users.follow(userId)
-      setLocalIsFollowing(data.following)
-      setFollowersCount(prev => data.following ? prev + 1 : prev - 1)
-      // Refresh user data to get accurate counts
-      const userData = await api.users.get(userId)
-      setUser(userData)
-    } catch (error) {
-      console.error('Error following/unfollowing:', error)
-      // Rollback
-      setLocalIsFollowing(localIsFollowing)
-      setFollowersCount(followersCount)
-    }
-  }, [session, userId, localIsFollowing, followersCount])
+    const willFollow = !user?.isFollowing
+    followMutation.mutate(willFollow)
+  }, [session, user?.isFollowing, followMutation])
 
   return {
-    user,
+    user: user ?? null,
     tweets,
     loading: loading || tweetsLoading,
     follow,
-    isFollowing: localIsFollowing,
+    isFollowing: user?.isFollowing ?? false,
     handleLike,
     handleRetweet,
     handleReply,

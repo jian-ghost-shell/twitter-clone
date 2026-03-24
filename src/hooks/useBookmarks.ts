@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Tweet } from './useTweets'
 import { api } from '@/lib/api'
 
@@ -10,22 +10,13 @@ interface UseBookmarksReturn {
 }
 
 export function useBookmarks(): UseBookmarksReturn {
-  const [bookmarks, setBookmarks] = useState<Tweet[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading } = useQuery<Tweet[]>({
+    queryKey: ['bookmarks'],
+    queryFn: () => api.users.bookmarks(),
+  })
 
-  useEffect(() => {
-    const fetchBookmarks = async () => {
-      try {
-        const data = await api.users.bookmarks()
-        setBookmarks(data)
-      } catch (error) {
-        console.error('Error fetching bookmarks:', error)
-      }
-      setLoading(false)
-    }
-
-    fetchBookmarks()
-  }, [])
-
-  return { bookmarks, loading }
+  return {
+    bookmarks: data ?? [],
+    loading: isLoading,
+  }
 }

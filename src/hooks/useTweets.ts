@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, InfiniteData } from '@tanstack/react-query'
 import { api, Tweet } from '@/lib/api'
 
 export type { Tweet }
@@ -25,222 +26,247 @@ interface UseTweetsReturn {
   prependTweet: (tweet: Tweet) => void
 }
 
+type PaginatedTweets = { tweets: Tweet[]; nextCursor: string | null }
+
+async function fetchTweets({ pageParam = null }: { pageParam?: string | null }): Promise<PaginatedTweets> {
+  const params = pageParam ? `?cursor=${pageParam}` : ''
+  const res = await fetch(`/api/tweets${params}`)
+  if (!res.ok) throw new Error('Failed to fetch tweets')
+  return res.json()
+}
+
+async function fetchUserTweets(userId: string): Promise<{ tweets: Tweet[]; nextCursor: null }> {
+  const tweets = await api.tweets.byUser(userId)
+  return { tweets, nextCursor: null }
+}
+
+async function fetchFollowingTweets(): Promise<{ tweets: Tweet[]; nextCursor: null }> {
+  const tweets = await api.users.following()
+  return { tweets, nextCursor: null }
+}
+
 export function useTweets({ endpoint = '/api/tweets', refreshTrigger = 0 }: UseTweetsOptions = {}): UseTweetsReturn {
   const { data: session } = useSession()
-  const [tweets, setTweets] = useState<Tweet[]>([])
-  const [loading, setLoading] = useState(true)
-  const [cursor, setCursor] = useState<string | null>(null)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
+  const queryClient = useQueryClient()
 
-  const fetchTweets = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setLoading(true)
-    }
-    try {
-      let data: { tweets: Tweet[]; nextCursor: string | null } | Tweet[]
-      if (endpoint === '/api/tweets') {
-        data = await api.tweets.list()
-      } else if (endpoint.startsWith('/api/users/') && endpoint.includes('/tweets')) {
-        const userId = endpoint.split('/')[3]
-        data = { tweets: await api.tweets.byUser(userId), nextCursor: null }
-      } else {
-        const res = await fetch(endpoint)
-        data = await res.json()
-      }
+  // Determine which query function to use
+  const isMainFeed = endpoint === '/api/tweets'
+  const isFollowingFeed = endpoint === '/api/tweets/following'
+  const isUserTweets = endpoint.startsWith('/api/users/') && endpoint.includes('/tweets')
 
-      if (Array.isArray(data)) {
-        setTweets(data)
-        setHasMore(false)
-      } else {
-        setTweets(data.tweets)
-        setCursor(data.nextCursor)
-        setHasMore(data.nextCursor !== null)
-      }
-    } catch (error) {
-      console.error('Error fetching tweets:', error)
-    }
-    setLoading(false)
-  }, [endpoint])
+  const userId = isUserTweets ? endpoint.split('/')[3] : null
 
-  const fetchMoreTweets = useCallback(async () => {
-    if (loadingMore || !hasMore || !cursor) return
-    setLoadingMore(true)
-    try {
-      if (endpoint === '/api/tweets') {
-        const data = await api.tweets.list({ cursor })
-        setTweets(prev => [...prev, ...data.tweets])
-        setCursor(data.nextCursor)
-        setHasMore(data.nextCursor !== null)
-      }
-    } catch (error) {
-      console.error('Error fetching more tweets:', error)
-    }
-    setLoadingMore(false)
-  }, [loadingMore, hasMore, cursor, endpoint])
+  const queryFn = isUserTweets && userId
+    ? () => fetchUserTweets(userId)
+    : isFollowingFeed
+    ? fetchFollowingTweets
+    : fetchTweets
 
-  useEffect(() => {
-    fetchTweets(true)
-  }, [refreshTrigger, fetchTweets])
+  const queryKey = isUserTweets && userId
+    ? ['tweets', 'user', userId]
+    : isFollowingFeed
+    ? ['tweets', 'following']
+    : ['tweets', 'timeline']
 
-  // Prepend a new tweet (used for real-time updates)
+  const {
+    data,
+    isLoading: loading,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey,
+    queryFn,
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  })
+
+  const tweets = data?.pages.flatMap((page) => page.tweets) ?? []
+
   const prependTweet = useCallback((tweet: Tweet) => {
-    setTweets(prev => [tweet, ...prev])
-  }, [])
+    queryClient.setQueryData<InfiniteData<PaginatedTweets>>(queryKey, (old) => {
+      if (!old) return { pages: [{ tweets: [tweet], nextCursor: null }], pageParams: [null] }
+      const firstPage = old.pages[0]
+      const newFirstPage = { ...firstPage, tweets: [tweet, ...firstPage.tweets] }
+      return { ...old, pages: [newFirstPage, ...old.pages.slice(1)] }
+    })
+  }, [queryClient, queryKey])
 
-  // Optimistic like
+  // Like mutation with optimistic update
+  const likeMutation = useMutation({
+    mutationFn: (tweetId: string) => api.tweets.like(tweetId),
+    onMutate: async (tweetId) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousData = queryClient.getQueryData<InfiniteData<PaginatedTweets>>(queryKey)
+      queryClient.setQueryData<InfiniteData<PaginatedTweets>>(queryKey, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            tweets: page.tweets.map((t) => {
+              if (t.id !== tweetId) return t
+              const isCurrentlyLiked = t.liked || false
+              return {
+                ...t,
+                liked: !isCurrentlyLiked,
+                _count: {
+                  ...t._count,
+                  likes: isCurrentlyLiked ? t._count.likes - 1 : t._count.likes + 1,
+                },
+              }
+            }),
+          })),
+        }
+      })
+      return { previousData }
+    },
+    onError: (_err, _tweetId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData)
+      }
+    },
+  })
+
+  // Retweet mutation with optimistic update
+  const retweetMutation = useMutation({
+    mutationFn: (tweetId: string) => api.tweets.retweet(tweetId),
+    onMutate: async (tweetId) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousData = queryClient.getQueryData<InfiniteData<PaginatedTweets>>(queryKey)
+      queryClient.setQueryData<InfiniteData<PaginatedTweets>>(queryKey, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            tweets: page.tweets.map((t) => {
+              if (t.id !== tweetId) return t
+              const isCurrentlyRetweeted = t.retweeted || false
+              return {
+                ...t,
+                retweeted: !isCurrentlyRetweeted,
+                _count: {
+                  ...t._count,
+                  retweets: isCurrentlyRetweeted ? t._count.retweets - 1 : t._count.retweets + 1,
+                },
+              }
+            }),
+          })),
+        }
+      })
+      return { previousData }
+    },
+    onError: (_err, _tweetId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData)
+      }
+    },
+  })
+
+  // Bookmark mutation with optimistic update
+  const bookmarkMutation = useMutation({
+    mutationFn: (tweetId: string) => api.tweets.bookmark(tweetId),
+    onMutate: async (tweetId) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousData = queryClient.getQueryData<InfiniteData<PaginatedTweets>>(queryKey)
+      queryClient.setQueryData<InfiniteData<PaginatedTweets>>(queryKey, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            tweets: page.tweets.map((t) => {
+              if (t.id !== tweetId) return t
+              return { ...t, bookmarked: !(t.bookmarked || false) }
+            }),
+          })),
+        }
+      })
+      return { previousData }
+    },
+    onError: (_err, _tweetId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(queryKey, context.previousData)
+      }
+    },
+  })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (tweetId: string) => api.tweets.delete(tweetId),
+    onSuccess: (_data, tweetId) => {
+      queryClient.setQueryData<InfiniteData<PaginatedTweets>>(queryKey, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            tweets: page.tweets.filter((t) => t.id !== tweetId),
+          })),
+        }
+      })
+    },
+  })
+
   const handleLike = useCallback(async (tweetId: string) => {
     if (!session?.user) {
       alert('Please sign in to like')
       return
     }
+    likeMutation.mutate(tweetId)
+  }, [session, likeMutation])
 
-    const tweet = tweets.find(t => t.id === tweetId)
-    if (!tweet) return
-
-    const isCurrentlyLiked = tweet.liked || false
-
-    // Optimistic update
-    setTweets(prev => prev.map(t => {
-      if (t.id === tweetId) {
-        return {
-          ...t,
-          liked: !isCurrentlyLiked,
-          _count: {
-            ...t._count,
-            likes: isCurrentlyLiked ? t._count.likes - 1 : t._count.likes + 1
-          }
-        }
-      }
-      return t
-    }))
-
-    try {
-      await api.tweets.like(tweetId)
-    } catch (error) {
-      console.error('Error liking tweet:', error)
-      // Rollback
-      setTweets(prev => prev.map(t => {
-        if (t.id === tweetId) {
-          return { ...t, liked: isCurrentlyLiked }
-        }
-        return t
-      }))
-    }
-  }, [session, tweets])
-
-  // Optimistic retweet
   const handleRetweet = useCallback(async (tweetId: string) => {
     if (!session?.user) {
       alert('Please sign in to retweet')
       return
     }
+    retweetMutation.mutate(tweetId)
+  }, [session, retweetMutation])
 
-    const tweet = tweets.find(t => t.id === tweetId)
-    if (!tweet) return
-
-    const isCurrentlyRetweeted = tweet.retweeted || false
-
-    // Optimistic update
-    setTweets(prev => prev.map(t => {
-      if (t.id === tweetId) {
-        return {
-          ...t,
-          retweeted: !isCurrentlyRetweeted,
-          _count: {
-            ...t._count,
-            retweets: isCurrentlyRetweeted ? t._count.retweets - 1 : t._count.retweets + 1
-          }
-        }
-      }
-      return t
-    }))
-
-    try {
-      await api.tweets.retweet(tweetId)
-    } catch (error) {
-      console.error('Error retweeting:', error)
-      // Rollback
-      setTweets(prev => prev.map(t => {
-        if (t.id === tweetId) {
-          return { ...t, retweeted: isCurrentlyRetweeted }
-        }
-        return t
-      }))
-    }
-  }, [session, tweets])
-
-  // Reply
   const handleReply = useCallback(async (tweetId: string) => {
     if (!session?.user) {
       alert('Please sign in to reply')
       return
     }
-
     const content = prompt('Write your reply:')
     if (!content?.trim()) return
-
     try {
       await api.tweets.reply(tweetId, content)
-      fetchTweets(true)
+      refetch()
     } catch (error) {
       console.error('Error creating reply:', error)
     }
-  }, [session, fetchTweets])
+  }, [session, refetch])
 
-  // Optimistic bookmark
   const handleBookmark = useCallback(async (tweetId: string) => {
     if (!session?.user) {
       alert('Please sign in to bookmark')
       return
     }
+    bookmarkMutation.mutate(tweetId)
+  }, [session, bookmarkMutation])
 
-    const tweet = tweets.find(t => t.id === tweetId)
-    if (!tweet) return
-
-    const isCurrentlyBookmarked = tweet.bookmarked || false
-
-    // Optimistic update
-    setTweets(prev => prev.map(t => {
-      if (t.id === tweetId) {
-        return { ...t, bookmarked: !isCurrentlyBookmarked }
-      }
-      return t
-    }))
-
-    try {
-      await api.tweets.bookmark(tweetId)
-    } catch (error) {
-      console.error('Error bookmarking tweet:', error)
-      // Rollback
-      setTweets(prev => prev.map(t => {
-        if (t.id === tweetId) {
-          return { ...t, bookmarked: isCurrentlyBookmarked }
-        }
-        return t
-      }))
-    }
-  }, [session, tweets])
-
-  // Delete
   const handleDelete = useCallback(async (tweetId: string) => {
-    try {
-      await api.tweets.delete(tweetId)
-      setTweets(prev => prev.filter(t => t.id !== tweetId))
-    } catch (error) {
-      console.error('Error deleting tweet:', error)
-    }
-  }, [])
+    deleteMutation.mutate(tweetId)
+  }, [deleteMutation])
 
   const refresh = useCallback(() => {
-    fetchTweets(true)
-  }, [fetchTweets])
+    refetch()
+  }, [refetch])
+
+  const fetchMore = useCallback(() => {
+    if (hasNextPage) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, fetchNextPage])
 
   return {
     tweets,
     loading,
-    hasMore,
-    fetchMore: fetchMoreTweets,
+    hasMore: hasNextPage ?? false,
+    fetchMore,
     refresh,
     handleLike,
     handleRetweet,
