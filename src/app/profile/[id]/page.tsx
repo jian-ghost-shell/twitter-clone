@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { TweetList } from '@/components/TweetList'
+import { SkeletonFeed } from '@/components/SkeletonFeed'
 import { useProfile } from '@/hooks/useProfile'
 
 export default function ProfilePage() {
@@ -27,7 +28,17 @@ export default function ProfilePage() {
   } = useProfile({ userId })
 
   if (loading) {
-    return <div className="profile-loading">Loading...</div>
+    return (
+      <div className="profile-container">
+        <header className="profile-header">
+          <Link href="/" className="back-btn">←</Link>
+          <div className="profile-title">
+            <h1>Profile</h1>
+          </div>
+        </header>
+        <SkeletonFeed />
+      </div>
+    )
   }
 
   if (!user) {

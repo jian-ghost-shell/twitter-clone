@@ -4,6 +4,7 @@ import { useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { VirtualizedTweetList } from './VirtualizedTweetList'
 import { ErrorBoundary } from './ErrorBoundary'
+import { SkeletonFeed } from './SkeletonFeed'
 import { useTweets, Tweet } from '@/hooks/useTweets'
 import { getPusherClient } from '@/hooks/useRealtime'
 
@@ -77,11 +78,7 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
   }, [session?.user?.id, prependTweet])
 
   if (loading && tweets.length === 0) {
-    return (
-      <div className="feed-loading">
-        <p>Loading tweets...</p>
-      </div>
-    )
+    return <SkeletonFeed />
   }
 
   if (tweets.length === 0) {

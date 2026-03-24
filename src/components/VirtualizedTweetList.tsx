@@ -107,7 +107,9 @@ export function VirtualizedTweetList({ tweets, onLike, onRetweet, onReply, onBoo
       {/* Infinite scroll trigger */}
       <div ref={triggerRef} className="feed-scroll-trigger">
         {isLoading && tweets.length > 0 && (
-          <div className="feed-loading-more">Loading more...</div>
+          <div className="feed-loading-more">
+            <span className="loading-spinner" />
+          </div>
         )}
         {!hasMore && tweets.length > 0 && (
           <div className="feed-end">You're all caught up ✨</div>

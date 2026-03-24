@@ -2,14 +2,18 @@
 
 import { useSession } from 'next-auth/react'
 import { Feed } from '@/components/Feed'
+import { SkeletonFeed } from '@/components/SkeletonFeed'
 
 export default function BookmarksPage() {
   const { data: session, status } = useSession()
 
   if (status === 'loading') {
     return (
-      <div className="bookmarks-loading">
-        Loading...
+      <div className="bookmarks-container">
+        <header className="bookmarks-header">
+          <h1>Bookmarks</h1>
+        </header>
+        <SkeletonFeed />
       </div>
     )
   }
