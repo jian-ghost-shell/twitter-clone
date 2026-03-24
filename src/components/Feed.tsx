@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { TweetList } from './TweetList'
+import { ErrorBoundary } from './ErrorBoundary'
 
 interface Tweet {
   id: string
@@ -319,14 +320,16 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
 
   return (
     <div>
-      <TweetList
-        tweets={tweets}
-        onLike={handleLike}
-        onRetweet={handleRetweet}
-        onReply={handleReply}
-        onBookmark={handleBookmark}
-        onDelete={handleDelete}
-      />
+      <ErrorBoundary>
+        <TweetList
+          tweets={tweets}
+          onLike={handleLike}
+          onRetweet={handleRetweet}
+          onReply={handleReply}
+          onBookmark={handleBookmark}
+          onDelete={handleDelete}
+        />
+      </ErrorBoundary>
       
       {/* Infinite scroll trigger */}
       <div ref={observerRef} className="feed-scroll-trigger">

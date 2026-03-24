@@ -74,14 +74,18 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark, onDel
   // This is a retweet - show original tweet
   if (tweet.retweetOf) {
     const original = tweet.retweetOf
+    // Guard against incomplete retweet data from Pusher
+    if (!original?.id || !original?.user?.id) {
+      return null
+    }
     return (
       <div className="tweet">
         <div className="tweet-avatar">
-          {tweet.user.image ? (
+          {tweet.user?.image ? (
             <img src={tweet.user.image} alt={tweet.user.name || 'User'} />
           ) : (
             <div className="tweet-avatar-placeholder">
-              {tweet.user.name?.[0] || '?'}
+              {tweet.user?.name?.[0] || '?'}
             </div>
           )}
         </div>
@@ -97,11 +101,11 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark, onDel
           <Link href={`/tweet/${original.id}`} className="original-tweet-link">
             <div className="tweet-header">
               <span className="tweet-name">
-                {original.user.name || 'Anonymous'}
+                {original.user?.name || 'Anonymous'}
               </span>
-              <span className="tweet-time">{formatDate(original.createdAt)}</span>
+              <span className="tweet-time">{original.createdAt ? formatDate(original.createdAt) : ''}</span>
             </div>
-            <div className="tweet-text">{original.content}</div>
+            <div className="tweet-text">{original.content || ''}</div>
             {original.image && (
               <div className="tweet-image">
                 <img src={original.image} alt="Tweet image" />
@@ -110,7 +114,12 @@ export function TweetItem({ tweet, onLike, onRetweet, onReply, onBookmark, onDel
           </Link>
 
           <TweetActions
-            tweet={{ ...tweet, id: original.id, user: original.user, _count: original._count }}
+            tweet={{
+              ...tweet,
+              id: original.id || '',
+              user: original.user || { id: '', name: null, image: null },
+              _count: original._count || { likes: 0, retweets: 0, replies: 0 },
+            }}
             currentUserId={session?.user?.id}
             onLike={onLike}
             onRetweet={onRetweet}
