@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { broadcast } from '@/lib/broadcast'
 
 // POST /api/tweets/[id]/like - Like a tweet
 export async function POST(
@@ -61,6 +62,12 @@ export async function POST(
           tweetId,
         },
       })
+
+      // Real-time: broadcast to the tweet owner
+      broadcast({
+        type: 'notification',
+        payload: { tweetId, type: 'like', actorId: session.user.id }
+      }, tweet.userId)
     }
 
     return NextResponse.json({ liked: true })

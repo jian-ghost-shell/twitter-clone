@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { useRealtime } from '@/hooks/useRealtime'
 
 type NotificationType = 'like' | 'retweet' | 'reply' | 'follow'
 
@@ -70,6 +71,14 @@ export function NotificationDropdown() {
       fetchNotifications()
     }
   }, [open, session])
+
+  // Real-time: refetch notification count when new one arrives
+  useRealtime((event) => {
+    if (event.type === 'notification' && !open) {
+      // Just refresh the count silently
+      fetchNotifications()
+    }
+  })
 
   // Close on outside click
   useEffect(() => {
