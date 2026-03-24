@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { VirtualizedTweetList } from './VirtualizedTweetList'
+import { TweetList } from './TweetList'
 import { ErrorBoundary } from './ErrorBoundary'
 import { SkeletonFeed } from './SkeletonFeed'
 import { useTweets, Tweet } from '@/hooks/useTweets'
@@ -90,18 +90,15 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
   }
 
   return (
-    <div style={{ height: '100%' }}>
+    <div style={{ height: '100%', overflow: 'auto' }}>
       <ErrorBoundary>
-        <VirtualizedTweetList
+        <TweetList
           tweets={tweets}
           onLike={handleLike}
           onRetweet={handleRetweet}
           onReply={handleReply}
           onBookmark={handleBookmark}
           onDelete={handleDelete}
-          onTriggerIntersect={handleTriggerIntersect}
-          isLoading={loading}
-          hasMore={hasMore}
         />
       </ErrorBoundary>
     </div>
