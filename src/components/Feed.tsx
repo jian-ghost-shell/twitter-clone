@@ -105,11 +105,12 @@ export function Feed({ refreshTrigger, endpoint = '/api/tweets' }: FeedProps) {
 
   // Real-time: subscribe to global Pusher channel for new tweets
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return
+    const key = (process.env.NEXT_PUBLIC_PUSHER_KEY || '').trim()
+    if (!key) return
 
     const Pusher = require('pusher-js')
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    const pusher = new Pusher(key, {
+      cluster: (process.env.NEXT_PUBLIC_PUSHER_CLUSTER || '').trim(),
     })
 
     const channel = pusher.subscribe('public-global')

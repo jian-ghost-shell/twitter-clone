@@ -8,10 +8,13 @@ let pusherClient: PusherClient | null = null
 
 function getPusherClient(): PusherClient {
   if (!pusherClient) {
-    pusherClient = new PusherClient(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-      authEndpoint: '/api/pusher/auth',
-    })
+    pusherClient = new PusherClient(
+      (process.env.NEXT_PUBLIC_PUSHER_KEY || '').trim(),
+      {
+        cluster: (process.env.NEXT_PUBLIC_PUSHER_CLUSTER || '').trim(),
+        authEndpoint: '/api/pusher/auth',
+      }
+    )
   }
   return pusherClient
 }
