@@ -151,13 +151,19 @@ export async function POST(request: Request) {
     })
 
     // Broadcast new tweet to all connected clients
-    await triggerTweetCreated({
-      id: tweet.id,
-      content: tweet.content,
-      userId: tweet.userId,
-      user: tweet.user,
-      createdAt: tweet.createdAt.toISOString(),
-    }).catch(console.error)
+    console.log('[TWEETS_ROUTE] tweet created, triggering Pusher for:', tweet.id)
+    try {
+      await triggerTweetCreated({
+        id: tweet.id,
+        content: tweet.content,
+        userId: tweet.userId,
+        user: tweet.user,
+        createdAt: tweet.createdAt.toISOString(),
+      })
+      console.log('[TWEETS_ROUTE] Pusher trigger done for:', tweet.id)
+    } catch (err) {
+      console.error('[TWEETS_ROUTE] Pusher trigger failed:', err)
+    }
 
     return NextResponse.json(tweet)
   } catch (error) {

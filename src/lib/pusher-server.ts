@@ -34,16 +34,26 @@ export async function triggerTweetCreated(tweet: {
   user: { id: string; name: string | null; image: string | null }
   createdAt: string
 }) {
-  await pusher.trigger(CHANNELS.GLOBAL, EVENTS.TWEET_CREATED, { tweet })
+  console.log('[PUSHER] triggerTweetCreated called, channel:', CHANNELS.GLOBAL, 'event:', EVENTS.TWEET_CREATED)
+  try {
+    await pusher.trigger(CHANNELS.GLOBAL, EVENTS.TWEET_CREATED, { tweet })
+    console.log('[PUSHER] triggerTweetCreated success')
+  } catch (err) {
+    console.error('[PUSHER] triggerTweetCreated error:', err)
+  }
 }
 
 // Trigger a like update to the tweet owner
 export async function triggerLikeUpdated(tweetId: string, userId: string, liked: boolean) {
-  await pusher.trigger(`${CHANNELS.USER_PREFIX}${userId}`, EVENTS.LIKE_UPDATED, {
-    tweetId,
-    liked,
-    actorId: userId,
-  })
+  try {
+    await pusher.trigger(`${CHANNELS.USER_PREFIX}${userId}`, EVENTS.LIKE_UPDATED, {
+      tweetId,
+      liked,
+      actorId: userId,
+    })
+  } catch (err) {
+    console.error('[PUSHER] triggerLikeUpdated error:', err)
+  }
 }
 
 // Trigger a notification to a specific user
@@ -53,5 +63,11 @@ export async function triggerNotification(userId: string, notification: {
   actorId: string
   tweetId?: string
 }) {
-  await pusher.trigger(`${CHANNELS.USER_PREFIX}${userId}`, EVENTS.NOTIFICATION, notification)
+  console.log('[PUSHER] triggerNotification called for user:', userId, notification)
+  try {
+    await pusher.trigger(`${CHANNELS.USER_PREFIX}${userId}`, EVENTS.NOTIFICATION, notification)
+    console.log('[PUSHER] triggerNotification success')
+  } catch (err) {
+    console.error('[PUSHER] triggerNotification error:', err)
+  }
 }
