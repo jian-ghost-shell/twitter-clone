@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getNotifications } from '@/lib/services/notificationService'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -9,19 +9,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId: session.user.id },
-    include: {
-      actor: {
-        select: { id: true, name: true, username: true, image: true },
-      },
-      tweet: {
-        select: { id: true, content: true },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
-  })
-
+  const notifications = await getNotifications(session.user.id)
   return NextResponse.json(notifications)
 }

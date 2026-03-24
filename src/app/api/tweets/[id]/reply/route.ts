@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { triggerNotification, triggerTweetCreated } from '@/lib/pusher-server'
+import { replyToTweet } from '@/lib/services/tweetService'
 
 // POST /api/tweets/[id]/reply - Reply to a tweet
 export async function POST(
@@ -23,32 +23,7 @@ export async function POST(
       return NextResponse.json({ error: 'Content is required' }, { status: 400 })
     }
 
-    // Check if parent tweet exists
-    const parentTweet = await prisma.tweet.findUnique({
-      where: { id: parentId }
-    })
-
-    if (!parentTweet) {
-      return NextResponse.json({ error: 'Parent tweet not found' }, { status: 404 })
-    }
-
-    // Create reply
-    const reply = await prisma.tweet.create({
-      data: {
-        content,
-        userId: session.user.id,
-        parentId
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        }
-      }
-    })
+    const { reply, notification } = await replyToTweet(session.user.id, parentId, content)
 
     // Broadcast new reply to all followers
     await triggerTweetCreated({
@@ -59,19 +34,9 @@ export async function POST(
       createdAt: reply.createdAt.toISOString(),
     }).catch(console.error)
 
-    // Create notification (but not for self-replies)
-    if (parentTweet.userId !== session.user.id) {
-      const notification = await prisma.notification.create({
-        data: {
-          type: 'reply',
-          userId: parentTweet.userId,
-          actorId: session.user.id,
-          tweetId: reply.id,
-        },
-      })
-
-      // Real-time notification
-      await triggerNotification(parentTweet.userId, {
+    // Real-time notification
+    if (notification) {
+      await triggerNotification(session.user.id, {
         id: notification.id,
         type: 'reply',
         actorId: session.user.id,
@@ -80,8 +45,11 @@ export async function POST(
     }
 
     return NextResponse.json(reply)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating reply:', error)
+    if (error.message === 'Parent tweet not found') {
+      return NextResponse.json({ error: 'Parent tweet not found' }, { status: 404 })
+    }
     return NextResponse.json({ error: 'Failed to create reply' }, { status: 500 })
   }
 }

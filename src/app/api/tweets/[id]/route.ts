@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { deleteTweet, getTweetById } from '@/lib/services/tweetService'
 
 // GET /api/tweets/[id] - Get a single tweet with replies
 export async function GET(
@@ -11,83 +11,15 @@ export async function GET(
   try {
     const { id } = await params
     const session = await getServerSession(authOptions)
-    const userId = session?.user?.id
+    const userId = session?.user?.id ?? null
 
-    const tweet = await prisma.tweet.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
-        parent: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                image: true
-              }
-            }
-          }
-        },
-        replies: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                image: true
-              }
-            },
-            _count: {
-              select: {
-                likes: true,
-                retweets: true,
-                replies: true
-              }
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          }
-        },
-        _count: {
-          select: {
-            likes: true,
-            retweets: true,
-            replies: true
-          }
-        }
-      }
-    })
+    const tweet = await getTweetById(id, userId)
 
     if (!tweet) {
       return NextResponse.json({ error: 'Tweet not found' }, { status: 404 })
     }
 
-    // Check if user liked/retweeted
-    let liked = false, retweeted = false
-    if (userId) {
-      const like = await prisma.like.findUnique({
-        where: { userId_tweetId: { userId, tweetId: id } }
-      })
-      liked = !!like
-
-      const retweet = await prisma.retweet.findUnique({
-        where: { userId_tweetId: { userId, tweetId: id } }
-      })
-      retweeted = !!retweet
-    }
-
-    return NextResponse.json({
-      ...tweet,
-      liked,
-      retweeted
-    })
+    return NextResponse.json(tweet)
   } catch (error) {
     console.error('Error fetching tweet:', error)
     return NextResponse.json({ error: 'Failed to fetch tweet' }, { status: 500 })
@@ -107,28 +39,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if tweet exists
-    const tweet = await prisma.tweet.findUnique({
-      where: { id },
-    })
-
-    if (!tweet) {
+    await deleteTweet(id, session.user.id)
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Error deleting tweet:', error)
+    if (error.message === 'Tweet not found') {
       return NextResponse.json({ error: 'Tweet not found' }, { status: 404 })
     }
-
-    // Only allow deletion by the tweet owner
-    if (tweet.userId !== session.user.id) {
+    if (error.message === 'Forbidden') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-
-    // Delete the tweet (cascades to likes and retweets)
-    await prisma.tweet.delete({
-      where: { id },
-    })
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting tweet:', error)
     return NextResponse.json({ error: 'Failed to delete tweet' }, { status: 500 })
   }
 }

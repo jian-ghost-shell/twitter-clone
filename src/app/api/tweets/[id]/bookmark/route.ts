@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { toggleBookmark } from '@/lib/services/tweetService'
 
 // POST /api/tweets/[id]/bookmark - Toggle bookmark
 export async function POST(
@@ -15,46 +15,13 @@ export async function POST(
     }
 
     const { id: tweetId } = await params
-    const userId = session.user.id
-
-    // Check if tweet exists
-    const tweet = await prisma.tweet.findUnique({
-      where: { id: tweetId }
-    })
-
-    if (!tweet) {
+    const { bookmarked } = await toggleBookmark(session.user.id, tweetId)
+    return NextResponse.json({ bookmarked })
+  } catch (error: any) {
+    console.error('Error toggling bookmark:', error)
+    if (error.message === 'Tweet not found') {
       return NextResponse.json({ error: 'Tweet not found' }, { status: 404 })
     }
-
-    // Check if already bookmarked
-    const existingBookmark = await prisma.bookmark.findUnique({
-      where: {
-        userId_tweetId: {
-          userId,
-          tweetId
-        }
-      }
-    })
-
-    if (existingBookmark) {
-      // Remove bookmark
-      await prisma.bookmark.delete({
-        where: { id: existingBookmark.id }
-      })
-      return NextResponse.json({ bookmarked: false })
-    }
-
-    // Create bookmark
-    await prisma.bookmark.create({
-      data: {
-        userId,
-        tweetId
-      }
-    })
-
-    return NextResponse.json({ bookmarked: true })
-  } catch (error) {
-    console.error('Error toggling bookmark:', error)
     return NextResponse.json({ error: 'Failed to toggle bookmark' }, { status: 500 })
   }
 }
